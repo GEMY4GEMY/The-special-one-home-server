@@ -30,12 +30,12 @@ if (Test-Path $ollama) {
         $models = & $ollama list 2>$null
         $available = @($models)
     } catch {}
-    if (-not $available) {
+    if (-not ($available -match 'qwen3-vl:')) {
         Start-Process -FilePath $ollama -ArgumentList 'serve' -WindowStyle Hidden
         Start-Sleep -Seconds 3
         try { $available = @(& $ollama list 2>$null) } catch {}
     }
-    foreach ($candidate in @('qwen3-vl:32b-thinking','qwen3-vl:8b','qwen3-vl:4b','qwen3-vl:2b')) {
+    foreach ($candidate in @('qwen3-vl:32b-thinking','qwen3-vl:8b-thinking','qwen3-vl:4b-thinking')) {
         if ($available -match [regex]::Escape($candidate)) {
             $env:TSO_AI_MODEL = $candidate
             Write-Host ('Local AI model: ' + $candidate)
