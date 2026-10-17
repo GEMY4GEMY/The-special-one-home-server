@@ -135,7 +135,11 @@ async function generatePageQuestions(page){
    status.textContent="AI task: "+task.state;
    if(["complete","failed","interrupted"].includes(task.state))break;
   }
-  if(!task||task.state!=="complete")throw new Error("AI task did not complete");
+  if(!task){status.textContent="AI task timed out. Try again later.";return}
+  if(task.state==="interrupted"){status.textContent="Server restarted during processing. Please retry.";return}
+  if(task.state==="failed"){status.textContent="AI processing failed. Check local model service.";return}
+  if(task.state!=="complete"){status.textContent="AI task is still processing.";return}
+  if(!Array.isArray(task.output)){status.textContent="Unexpected AI result; no questions were saved.";return}
   const response={questions:task.output};
   status.textContent=response.questions.length+" suggestions. Review before saving.";
   for(const q of response.questions){
