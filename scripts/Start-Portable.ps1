@@ -24,7 +24,7 @@ if (Test-Path $ollama) {
     New-Item -ItemType Directory -Force $env:OLLAMA_MODELS | Out-Null
     $env:OLLAMA_HOST = '127.0.0.1:11434'
     $env:TSO_AI_URL = 'http://127.0.0.1:11434/api/chat'
-    $env:TSO_AI_MODEL = 'qwen3-vl:32b-thinking'
+    $env:TSO_AI_MODEL = 'qwen3-vl:4b'
     $available = @()
     try {
         $models = & $ollama list 2>$null
@@ -35,7 +35,7 @@ if (Test-Path $ollama) {
         Start-Sleep -Seconds 3
         try { $available = @(& $ollama list 2>$null) } catch {}
     }
-    foreach ($candidate in @('qwen3-vl:32b-thinking','qwen3-vl:8b-thinking','qwen3-vl:4b-thinking')) {
+    foreach ($candidate in @('qwen3-vl:4b','qwen3-vl:2b')) {
         if ($available -match [regex]::Escape($candidate)) {
             $env:TSO_AI_MODEL = $candidate
             Write-Host ('Local AI model: ' + $candidate)
