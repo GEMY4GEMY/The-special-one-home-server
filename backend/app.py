@@ -386,3 +386,22 @@ async def inspect_pdf_visual(page_number: int, file: UploadFile = File(...), use
         raise HTTPException(422, str(exc))
     except RuntimeError:
         raise HTTPException(503, "Local vision model unavailable")
+
+from backend.ai_queue import submit as submit_ai_task, lookup as lookup_ai_task
+
+@app.post("/api/admin/ai/suggest-async")
+def ai_suggest_async(payload: AIPageRequest, user=Depends(admin_only)):
+    if not payload.grade.strip() or not 1 <= payload.page_number <= 300 or len(payload.page_text) > 15000 or not 1 <= payload.count <= 10:
+        raise HTTPException(422, "Invalid AI request")
+    try:
+        task_id = submit_ai_task(user["id"], suggest_questions, payload.page_text, payload.page_number, payload.grade, payload.count)
+    except ValueError as exc:
+        raise HTTPException(429, str(exc))
+    return {"task_id": task_id, "state": "waiting"}
+
+@app.get("/api/admin/ai/tasks/{task_id}")
+def ai_task_status(task_id: str, user=Depends(admin_only)):
+    task = lookup_ai_task(task_id, user["id"])
+    if task is None:
+        raise HTTPException(404, "Task not found")
+    return task
