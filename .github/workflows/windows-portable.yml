@@ -1,0 +1,46 @@
+name: Build Windows portable ZIP
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'scripts/Start-Portable.ps1'
+      - 'START_PORTABLE_WINDOWS.bat'
+      - '.github/workflows/windows-portable.yml'
+jobs:
+  portable:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          architecture: x64
+      - name: Prepare portable application
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist/TheSpecialOne/runtime/Lib/site-packages | Out-Null
+          Copy-Item backend,frontend,scripts,START_PORTABLE_WINDOWS.bat dist/TheSpecialOne -Recurse
+          curl.exe -fL --retry 3 -o python-embed.zip https://www.python.org/ftp/python/3.11.9/python-3.11.9-embed-amd64.zip
+          if ($LASTEXITCODE -ne 0) { throw 'Python download failed' }
+          Expand-Archive python-embed.zip -DestinationPath dist/TheSpecialOne/runtime
+          @('python311.zip', '.', 'Lib/site-packages', '..', 'import site') | Set-Content dist/TheSpecialOne/runtime/python311._pth
+          python -m pip install --disable-pip-version-check --target dist/TheSpecialOne/runtime/Lib/site-packages -r backend/requirements.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Dependency packaging failed' }
+      - name: Smoke-test embedded runtime
+        shell: pwsh
+        run: |
+          Push-Location dist/TheSpecialOne
+          ./runtime/python.exe -c "import fastapi,uvicorn,pypdf,fitz,multipart,pwdlib; from backend.app import app; print(app.title)"
+          if ($LASTEXITCODE -ne 0) { throw 'Portable runtime smoke test failed' }
+          Pop-Location
+      - name: Package offline ZIP
+        shell: pwsh
+        run: Compress-Archive -Path dist/TheSpecialOne -DestinationPath TheSpecialOne-Windows-x64-Portable.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TheSpecialOne-Windows-x64-Portable
+          path: TheSpecialOne-Windows-x64-Portable.zip
+          retention-days: 30
