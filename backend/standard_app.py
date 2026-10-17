@@ -1,6 +1,8 @@
 """Offline Standard edition: no AI endpoints or AI engine required."""
 import json
 from fastapi import Depends, File, HTTPException, UploadFile
+from fastapi.responses import FileResponse
+from backend.app import FRONTEND
 from backend.app import app, admin_only, db, init_question_tables
 
 # Disable inference routes in this edition, even if a client calls them directly.
@@ -33,3 +35,7 @@ async def import_question_bank(file: UploadFile = File(...), user=Depends(admin_
 @app.get('/api/edition')
 def standard_edition():
     return {'edition':'standard'}
+
+@app.get('/standard-home')
+def standard_home():
+    return FileResponse(FRONTEND / 'standard.html')
