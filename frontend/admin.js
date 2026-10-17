@@ -20,7 +20,7 @@ async function refreshAdminQuestions(){
    edit.addEventListener("click",()=>{
     const fields={"q-grade":"grade","q-unit":"unit","q-lesson":"lesson","q-difficulty":"difficulty","q-kind":"kind","q-prompt":"prompt","q-answer":"answer"};
     for(const [id,key] of Object.entries(fields))document.getElementById(id).value=question[key];
-    document.getElementById("q-options").value=JSON.parse(question.options||"[]").join("\\n");
+    document.getElementById("q-options").value=JSON.parse(question.options||"[]").join("\n");
     document.getElementById("question-form").dataset.editId=question.id;
     document.getElementById("question-message").textContent="Editing question #"+question.id;
     document.getElementById("question-form").scrollIntoView({behavior:"smooth"});
