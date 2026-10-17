@@ -322,3 +322,29 @@ def update_bank_question(question_id: int,payload: QuestionCreate,user=Depends(a
         if changed.rowcount == 0:
             raise HTTPException(404,"Question not found")
         return {"updated":question_id}
+
+# Curriculum PDF import: text-only first stage. No AI generation or publication.
+from fastapi import UploadFile, File
+from backend.pdf_ingest import extract_pdf_pages
+
+MAX_PDF_BYTES = 20 * 1024 * 1024
+
+@app.post("/api/admin/pdf-inspect")
+async def inspect_curriculum_pdf(file: UploadFile = File(...), user=Depends(admin_only)):
+    if not file.filename or not file.filename.lower().endswith(".pdf"):
+        raise HTTPException(400, "A PDF file is required")
+    data = await file.read(MAX_PDF_BYTES + 1)
+    if len(data) > MAX_PDF_BYTES:
+        raise HTTPException(413, "PDF exceeds 20 MB")
+    try:
+        pages = extract_pdf_pages(data)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc))
+    return {
+        "filename": Path(file.filename).name,
+        "page_count": len(pages),
+        "text_pages": sum(bool(p["text"]) for p in pages),
+        "image_pages": sum(p["needs_vision"] for p in pages),
+        "pages": pages,
+        "status": "inspection_only"
+    }
