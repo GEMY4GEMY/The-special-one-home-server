@@ -30,7 +30,7 @@ jobs:
           python -m pip install --disable-pip-version-check --target dist/TheSpecialOneStandard/runtime/Lib/site-packages -r backend/requirements.txt
           if ($LASTEXITCODE -ne 0) { throw 'Dependency packaging failed' }
           Push-Location dist/TheSpecialOneStandard
-          ./runtime/python.exe -c "from backend.app import app; print(app.title)"
+          ./runtime/python.exe -c "from backend.standard_app import app; print(app.title)"
           if ($LASTEXITCODE -ne 0) { throw 'Embedded runtime failed' }
           Pop-Location
       - name: Package Standard ZIP
