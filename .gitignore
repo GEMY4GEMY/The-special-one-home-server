@@ -1,0 +1,19 @@
+# Secrets and real student records
+.env
+.env.*
+!.env.example
+data/
+*.db
+*.sqlite
+*.sqlite3
+backups/
+*.backup
+*.dump
+*.bak
+*.log
+__pycache__/
+*.py[cod]
+.venv/
+node_modules/
+dist/
+build/
