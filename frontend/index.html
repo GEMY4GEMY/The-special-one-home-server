@@ -33,27 +33,27 @@
 <h3>Question Bank / بنك الأسئلة</h3>
 <p class="muted">Add questions from your approved curriculum materials.</p>
 <form id="question-form" class="admin-form">
-<label>Grade / الصف<input name="grade" required maxlength="80" placeholder="Primary 3"></label>
-<label>Unit / الوحدة<input name="unit" required maxlength="80" placeholder="Unit 1"></label>
-<label>Lesson / الدرس<input name="lesson" required maxlength="80" placeholder="Lesson 1"></label>
-<label>Difficulty / المستوى<select name="difficulty"><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select></label>
-<label>Question type / نوع السؤال<select name="kind" id="question-kind"><option value="choose">Choose</option><option value="fill">Fill in the gaps</option><option value="rearrange">Rearrange</option><option value="letters">Reorder letters</option></select></label>
-<label class="wide">Question / السؤال<textarea name="prompt" required maxlength="1000" rows="3"></textarea></label>
-<label class="wide">Correct answer / الإجابة<input name="answer" required maxlength="300"></label>
-<label class="wide">Options / الاختيارات (Choose only; one option per line)<textarea name="options" rows="4" placeholder="am&#10;is&#10;are"></textarea></label>
+<label>Grade / الصف<input name="grade" id="q-grade" required maxlength="80" placeholder="Primary 3"></label>
+<label>Unit / الوحدة<input name="unit" id="q-unit" required maxlength="80" placeholder="Unit 1"></label>
+<label>Lesson / الدرس<input name="lesson" id="q-lesson" required maxlength="80" placeholder="Lesson 1"></label>
+<label>Difficulty / المستوى<select name="difficulty" id="q-difficulty"><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select></label>
+<label>Question type / نوع السؤال<select name="kind" id="q-kind" id="question-kind"><option value="choose">Choose</option><option value="fill">Fill in the gaps</option><option value="rearrange">Rearrange</option><option value="letters">Reorder letters</option></select></label>
+<label class="wide">Question / السؤال<textarea name="prompt" id="q-prompt" required maxlength="1000" rows="3"></textarea></label>
+<label class="wide">Correct answer / الإجابة<input name="answer" id="q-answer" required maxlength="300"></label>
+<label class="wide">Options / الاختيارات (Choose only; one option per line)<textarea name="options" id="q-options" rows="4" placeholder="am&#10;is&#10;are"></textarea></label>
 <button class="primary" type="submit">Save question +</button>
 </form><p id="question-message" role="status"></p>
 </div>
 <div class="panel admin-panel"><h3>Generate exam draft / إنشاء مسودة امتحان</h3>
 <form id="draft-form" class="admin-form">
-<label>Exam title<input name="title" required placeholder="October Revision"></label>
-<label>Grade<input name="grade" required placeholder="Primary 3"></label>
-<label>Number of questions<select name="count"><option>20</option><option>40</option><option>60</option><option>80</option><option>100</option></select></label>
+<label>Exam title<input name="title" id="draft-title" required placeholder="October Revision"></label>
+<label>Grade<input name="grade" id="draft-grade" required placeholder="Primary 3"></label>
+<label>Number of questions<select name="count" id="draft-count"><option>20</option><option>40</option><option>60</option><option>80</option><option>100</option></select></label>
 <button class="primary" type="submit">Generate draft ✦</button>
 </form><p id="draft-message" role="status"></p>
 </div>
 <div class="panel admin-panel"><h3>PDF Curriculum Inspector</h3><form id="pdf-inspect-form"><label for="curriculum-pdf">Select PDF</label><input id="curriculum-pdf" type="file" accept=".pdf,application/pdf" required><button class="primary" type="submit">Inspect PDF</button></form><p id="pdf-inspect-status" role="status"></p><div id="pdf-inspect-result"></div></div>
-<div class="panel admin-panel"><h3>Recent questions / الأسئلة المضافة</h3><button class="outline" id="refresh-questions" type="button">Refresh list</button><div id="question-list" class="results"></div></div>
+<div class="panel admin-panel"><h3>Recent questions / الأسئلة المضافة</h3><button class="outline" id="refresh-questions" type="button">Refresh list</button><div id="bank-list" class="results"></div></div>
 </div>
 </section>
 <section class="themes"><h2>Designed for every learner</h2><div class="theme-grid"><article class="theme primary-theme"><span class="theme-icon">🌈</span><h3>Primary</h3><p>Bright, playful and easy to use.</p></article><article class="theme prep-theme"><span class="theme-icon">🚀</span><h3>Preparatory</h3><p>Clear challenges and confidence.</p></article><article class="theme secondary-theme"><span class="theme-icon">🎓</span><h3>Secondary</h3><p>Focused practice and progress.</p></article></div></section>
