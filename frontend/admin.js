@@ -98,6 +98,8 @@ document.addEventListener("DOMContentLoaded",()=>{
        if(!response.ok)throw new Error("Vision request failed");
        const result=await response.json();page.text=result.text;page.needs_vision=false;
        status.textContent="Page "+page.page+" transcribed. Review its text before generating questions.";
+       pre.textContent=page.text.slice(0,1500);
+       summary.textContent="Page "+page.page+" — transcribed text (review required)";
        vision.textContent="Generate from page "+page.page;
        vision.onclick=()=>generatePageQuestions(page);
       }catch{status.textContent="Could not read page. Check local vision model."}
