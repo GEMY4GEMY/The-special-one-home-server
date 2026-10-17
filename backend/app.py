@@ -284,3 +284,41 @@ def generate_exam_draft(payload: ExamDraftCreate, user=Depends(admin_only)):
         draft_id = secrets.token_urlsafe(18)
         conn.execute("INSERT INTO exam_drafts(id,title,grade,question_ids) VALUES (?,?,?,?)", (draft_id, payload.title, payload.grade, json.dumps(selected)))
         return {"id": draft_id, "question_count": len(selected), "status": "draft"}
+
+@app.get("/api/admin/exam-drafts")
+def list_exam_drafts(user=Depends(admin_only)):
+    with db() as conn:
+        init_question_tables(conn)
+        rows=conn.execute("SELECT id,title,grade,question_ids FROM exam_drafts ORDER BY rowid DESC LIMIT 100").fetchall()
+        return [{"id":r["id"],"title":r["title"],"grade":r["grade"],"question_count":len(json.loads(r["question_ids"]))} for r in rows]
+
+@app.delete("/api/admin/question-bank/{question_id}")
+def delete_bank_question(question_id: int, user=Depends(admin_only)):
+    with db() as conn:
+        init_question_tables(conn)
+        drafts=conn.execute("SELECT question_ids FROM exam_drafts").fetchall()
+        if any(question_id in json.loads(row["question_ids"]) for row in drafts):
+            raise HTTPException(409,"Question is used in a saved draft")
+        deleted=conn.execute("DELETE FROM question_bank WHERE id=?", (question_id,))
+        if deleted.rowcount == 0:
+            raise HTTPException(404,"Question not found")
+        return {"deleted":question_id}
+
+@app.put("/api/admin/question-bank/{question_id}")
+def update_bank_question(question_id: int,payload: QuestionCreate,user=Depends(admin_only)):
+    if payload.kind not in ("choose","fill","rearrange","letters") or payload.difficulty not in ("easy","medium","hard"):
+        raise HTTPException(400,"Invalid type or difficulty")
+    if not all(v.strip() for v in (payload.grade,payload.unit,payload.lesson,payload.prompt,payload.answer)):
+        raise HTTPException(400,"Required field missing")
+    if payload.kind=="choose" and (len(payload.options)<2 or payload.answer not in payload.options):
+        raise HTTPException(400,"Invalid choice options")
+    with db() as conn:
+        init_question_tables(conn)
+        drafts=conn.execute("SELECT question_ids FROM exam_drafts").fetchall()
+        if any(question_id in json.loads(row["question_ids"]) for row in drafts):
+            raise HTTPException(409,"Cannot modify a question used in a saved draft")
+        changed=conn.execute("""UPDATE question_bank SET grade=?,unit=?,lesson=?,difficulty=?,kind=?,prompt=?,answer=?,options=? WHERE id=?""",
+            (payload.grade,payload.unit,payload.lesson,payload.difficulty,payload.kind,payload.prompt,payload.answer,json.dumps(payload.options),question_id))
+        if changed.rowcount == 0:
+            raise HTTPException(404,"Question not found")
+        return {"updated":question_id}
