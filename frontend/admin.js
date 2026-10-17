@@ -87,6 +87,24 @@ document.addEventListener("DOMContentLoaded",()=>{
    window.tsoPdfPages=report.pages;
    const pageList=document.getElementById("ai-page-list");pageList.replaceChildren();
    for(const page of report.pages){
+    if(page.needs_vision){
+     const vision=document.createElement("button");vision.type="button";vision.className="outline";vision.textContent="Read scanned page "+page.page;
+     vision.onclick=async()=>{
+      const status=document.getElementById("ai-status");status.textContent="Reading scanned page locally...";
+      vision.disabled=true;
+      try{
+       const form=new FormData();form.append("file",file);
+       const response=await fetch("/api/admin/pdf-vision?page_number="+page.page,{method:"POST",credentials:"same-origin",body:form});
+       if(!response.ok)throw new Error("Vision request failed");
+       const result=await response.json();page.text=result.text;page.needs_vision=false;
+       status.textContent="Page "+page.page+" transcribed. Review its text before generating questions.";
+       vision.textContent="Generate from page "+page.page;
+       vision.onclick=()=>generatePageQuestions(page);
+      }catch{status.textContent="Could not read page. Check local vision model."}
+      finally{vision.disabled=false}
+     };
+     pageList.append(vision);
+    }
     if(page.text){const button=document.createElement("button");button.type="button";button.className="outline";button.textContent="Generate from page "+page.page;button.onclick=()=>generatePageQuestions(page);pageList.append(button)}
     const detail=document.createElement("details");
     const summary=document.createElement("summary");
