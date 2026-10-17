@@ -44,3 +44,6 @@ def standard_home():
 @app.get("/api/standard/status")
 def standard_status():
     return {"edition": "standard", "offline": True, "question_import": True}
+
+# Register Standard-only published examination endpoints.
+import backend.standard_exams
