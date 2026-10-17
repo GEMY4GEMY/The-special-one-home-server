@@ -53,6 +53,7 @@
 </form><p id="draft-message" role="status"></p>
 </div>
 <div class="panel admin-panel"><h3>PDF Curriculum Inspector</h3><form id="pdf-inspect-form"><label for="curriculum-pdf">Select PDF</label><input id="curriculum-pdf" type="file" accept=".pdf,application/pdf" required><button class="primary" type="submit">Inspect PDF</button></form><p id="pdf-inspect-status" role="status"></p><div id="pdf-inspect-result"></div></div>
+<div class="panel admin-panel"><h3>AI Question Suggestions</h3><p class="muted">Inspect a PDF first, then choose a page with text. Review every suggestion before saving.</p><label for="ai-grade">Grade</label><input id="ai-grade" placeholder="Primary 3"><label for="ai-count">Questions per page</label><select id="ai-count"><option>3</option><option selected>5</option><option>10</option></select><div id="ai-page-list"></div><p id="ai-status" role="status"></p><div id="ai-suggestions"></div></div>
 <div class="panel admin-panel"><h3>Recent questions / الأسئلة المضافة</h3><button class="outline" id="refresh-questions" type="button">Refresh list</button><div id="bank-list" class="results"></div></div>
 </div>
 </section>
