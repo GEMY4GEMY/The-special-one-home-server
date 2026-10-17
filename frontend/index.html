@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#173d80"><meta name="description" content="THE SPECIAL ONE local learning and exams portal">
+<title>THE SPECIAL ONE | Student Portal</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="shell">
+<header class="topbar">
+ <a class="brand" href="/" aria-label="THE SPECIAL ONE Home"><span class="brand-mark">★</span><span>THE SPECIAL ONE<small>Sponsored by Mr. Sameh Abdel Hafeez</small></span></a>
+ <span class="network" id="network" role="status">Checking server…</span>
+</header>
+<main>
+<section class="hero">
+ <div><span class="eyebrow">SMART LEARNING • LOCAL SERVER</span><h1>Every great result starts with one step.</h1><p>Practice, improve, and celebrate your progress.</p></div>
+ <div class="hero-symbol" aria-hidden="true">✦</div>
+</section>
+<section class="panel" id="login-panel">
+ <div class="panel-heading"><span class="round-icon">🔐</span><div><h2>Welcome back!</h2><p>Sign in to see your learning journey.</p></div></div>
+ <form id="login-form">
+  <label for="username">Username</label><input id="username" name="username" autocomplete="username" required placeholder="Your student code or username">
+  <label for="password">Password</label><input id="password" name="password" type="password" autocomplete="current-password" required placeholder="Your password">
+  <button class="primary" type="submit">Sign in <span aria-hidden="true">→</span></button>
+ </form><p id="login-error" class="error" role="alert"></p>
+</section>
+<section class="dashboard hidden" id="dashboard" aria-live="polite">
+ <div class="welcome"><div><span class="eyebrow">YOUR LEARNING SPACE</span><h2 id="welcome-title">Welcome!</h2><p id="welcome-subtitle">Here is your progress.</p></div><button class="outline" id="logout" type="button">Log out</button></div>
+ <div id="student-area" class="hidden"><div class="stat-grid"><article class="stat"><span>Completed results</span><strong id="completed">0</strong></article><article class="stat"><span>Average score</span><strong id="average">—</strong></article></div><div class="panel"><h3>My exam results</h3><p class="muted">Only results linked to your account appear here.</p><div id="results" class="results"></div></div></div>
+ <div id="admin-area" class="hidden"><div class="panel"><h3>Admin workspace</h3><p class="muted">Account and exam management will be added in the next stage. Student records are not displayed publicly.</p></div></div>
+</section>
+<section class="themes"><h2>Designed for every learner</h2><div class="theme-grid"><article class="theme primary-theme"><span class="theme-icon">🌈</span><h3>Primary</h3><p>Bright, playful and easy to use.</p></article><article class="theme prep-theme"><span class="theme-icon">🚀</span><h3>Preparatory</h3><p>Clear challenges and confidence.</p></article><article class="theme secondary-theme"><span class="theme-icon">🎓</span><h3>Secondary</h3><p>Focused practice and progress.</p></article></div></section>
+</main>
+<footer>THE SPECIAL ONE · Private local learning portal · Mr. Sameh Abdel Hafeez</footer>
+</div>
+<script src="/static/app.js" defer></script>
+</body></html>
