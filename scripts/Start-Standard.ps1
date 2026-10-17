@@ -4,6 +4,7 @@ Set-Location $root
 $python = Join-Path $root 'runtime\python.exe'
 if (-not (Test-Path $python)) { throw 'Embedded Python runtime missing.' }
 $env:TSO_ADMIN_USERNAME = 'Mrsameh'
+$env:TSO_EDITION = 'standard'
 $env:TSO_DB_PATH = Join-Path $root 'backend\data\standard.sqlite3'
 if (-not (Test-Path $env:TSO_DB_PATH)) {
     $secret = Read-Host 'Choose administrator password (at least 12 characters)' -AsSecureString
