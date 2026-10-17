@@ -11,9 +11,13 @@ if (-not $existing) {
     $server = Start-Process -FilePath $ollama -ArgumentList 'serve' -PassThru -WindowStyle Hidden
     Start-Sleep -Seconds 5
 }
-foreach ($model in @('qwen3-vl:32b-thinking','qwen3-vl:8b')) {
+foreach ($model in @('qwen3-vl:32b-thinking','qwen3-vl:8b-thinking','qwen3-vl:4b-thinking')) {
     Write-Host ('Downloading model: ' + $model)
     & $ollama pull $model
     if ($LASTEXITCODE -ne 0) { throw ('Failed to download model ' + $model + '. Verify the exact model tag and internet access.') }
 }
-Write-Host 'Models are now stored in ai-models. Copy the entire portable folder for offline use.'
+$installed = & $ollama list
+foreach ($required in @('qwen3-vl:32b-thinking','qwen3-vl:8b-thinking','qwen3-vl:4b-thinking')) {
+    if (-not ($installed -match [regex]::Escape($required))) { throw ('Required model missing: ' + $required) }
+}
+Write-Host 'Verified all 3 models in ai-models. Copy the entire portable folder for offline use.'
