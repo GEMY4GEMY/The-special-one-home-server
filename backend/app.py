@@ -368,3 +368,21 @@ def ai_suggest(payload: AIPageRequest, user=Depends(admin_only)):
     except RuntimeError:
         raise HTTPException(503, "Local AI unavailable")
     return {"status": "pending_review", "questions": questions}
+
+from backend.pdf_vision import read_visual_page
+
+@app.post("/api/admin/pdf-vision")
+async def inspect_pdf_visual(page_number: int, file: UploadFile = File(...), user=Depends(admin_only)):
+    if not file.filename or not file.filename.lower().endswith(".pdf"):
+        raise HTTPException(400, "PDF required")
+    raw = await file.read(MAX_PDF_BYTES + 1)
+    if len(raw) > MAX_PDF_BYTES:
+        raise HTTPException(413, "PDF exceeds 20 MB")
+    if not 1 <= page_number <= 300:
+        raise HTTPException(422, "Invalid page number")
+    try:
+        return read_visual_page(raw, page_number)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc))
+    except RuntimeError:
+        raise HTTPException(503, "Local vision model unavailable")
