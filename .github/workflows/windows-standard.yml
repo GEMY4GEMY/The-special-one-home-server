@@ -35,6 +35,12 @@ jobs:
           ./runtime/python.exe -c "from backend.standard_app import app; print(app.title)"
           if ($LASTEXITCODE -ne 0) { throw 'Embedded runtime failed' }
           Pop-Location
+      - name: Test complete Standard exam workflow
+        shell: pwsh
+        run: |
+          Push-Location dist/TheSpecialOneStandard
+          ./scripts/Test-Standard.ps1
+          Pop-Location
       - name: Package Standard ZIP
         shell: pwsh
         run: Compress-Archive -Path dist/TheSpecialOneStandard -DestinationPath TheSpecialOne-Standard-Windows-x64.zip
