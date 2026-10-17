@@ -29,6 +29,16 @@ jobs:
           @('python311.zip', '.', 'Lib/site-packages', '..', 'import site') | Set-Content dist/TheSpecialOne/runtime/python311._pth
           python -m pip install --disable-pip-version-check --target dist/TheSpecialOne/runtime/Lib/site-packages -r backend/requirements.txt
           if ($LASTEXITCODE -ne 0) { throw 'Dependency packaging failed' }
+      - name: Bundle standalone Ollama engine
+        shell: pwsh
+        run: |
+          $release = Invoke-RestMethod 'https://api.github.com/repos/ollama/ollama/releases/latest'
+          $asset = $release.assets | Where-Object { $_.name -eq 'ollama-windows-amd64.zip' } | Select-Object -First 1
+          if (-not $asset) { throw 'Standalone Ollama Windows archive not found' }
+          New-Item -ItemType Directory -Force dist/TheSpecialOne/ai-engine | Out-Null
+          Invoke-WebRequest $asset.browser_download_url -OutFile ollama-windows.zip
+          Expand-Archive ollama-windows.zip -DestinationPath dist/TheSpecialOne/ai-engine
+          if (-not (Test-Path dist/TheSpecialOne/ai-engine/ollama.exe)) { throw 'Ollama binary missing' }
       - name: Smoke-test embedded runtime
         shell: pwsh
         run: |
