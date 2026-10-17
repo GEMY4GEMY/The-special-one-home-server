@@ -23,7 +23,6 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force dist/TheSpecialOneStandard/runtime/Lib/site-packages | Out-Null
           Copy-Item backend,frontend,scripts,START_STANDARD_WINDOWS.bat dist/TheSpecialOneStandard -Recurse
-          Copy-Item frontend/index.html dist/TheSpecialOneStandard/frontend/standard.html
           curl.exe -fL --retry 3 -o python-embed.zip https://www.python.org/ftp/python/3.11.9/python-3.11.9-embed-amd64.zip
           if ($LASTEXITCODE -ne 0) { throw 'Python download failed' }
           Expand-Archive python-embed.zip -DestinationPath dist/TheSpecialOneStandard/runtime
