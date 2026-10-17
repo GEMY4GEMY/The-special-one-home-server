@@ -5,7 +5,7 @@ import urllib.request
 import urllib.error
 
 ENDPOINT = os.getenv("TSO_AI_URL", "http://127.0.0.1:11434/api/chat")
-MODEL = os.getenv("TSO_AI_MODEL", "qwen3-vl:32b-thinking")
+MODEL = os.getenv("TSO_AI_MODEL", "qwen3-vl:4b")
 ALLOWED_KINDS = {"choose", "fill", "rearrange", "letters"}
 
 def suggest_questions(page_text: str, page_number: int, grade: str, count: int = 5):
