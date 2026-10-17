@@ -10,6 +10,7 @@ app.router.routes[:] = [
     route for route in app.router.routes
     if not getattr(route, "path", "").startswith("/api/admin/ai/")
     and getattr(route, "path", "") != "/api/admin/pdf-vision"
+    and getattr(route, "path", "") not in ("/api/exams", "/api/exams/{exam_id}", "/api/exams/{exam_id}/submit")
 ]
 
 @app.post("/api/admin/question-bank/import")
@@ -47,3 +48,7 @@ def standard_status():
 
 # Register Standard-only published examination endpoints.
 import backend.standard_exams
+
+@app.get("/api/standard/health")
+def standard_health():
+    return {"status":"ok","edition":"standard","port":200}
