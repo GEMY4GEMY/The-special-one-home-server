@@ -9,6 +9,8 @@ on:
       - 'scripts/Start-Standard.ps1'
       - 'START_STANDARD_WINDOWS.bat'
       - '.github/workflows/windows-standard.yml'
+permissions:
+  contents: write
 jobs:
   standard:
     runs-on: windows-latest
@@ -41,3 +43,11 @@ jobs:
           name: TheSpecialOne-Standard-Windows-x64
           path: TheSpecialOne-Standard-Windows-x64.zip
           retention-days: 30
+      - name: Publish verified Windows ZIP to GitHub Releases
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "standard-v0.1.0-build-${{ github.run_number }}"
+          gh release create $tag TheSpecialOne-Standard-Windows-x64.zip --title "THE SPECIAL ONE Standard $tag" --notes "Offline Windows x64 Standard edition. Port 200. No AI model required. Extract ZIP and run START_STANDARD_WINDOWS.bat." --target "${{ github.sha }}"
+          if ($LASTEXITCODE -ne 0) { throw 'GitHub release publishing failed' }
