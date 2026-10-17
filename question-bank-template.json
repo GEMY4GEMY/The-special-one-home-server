@@ -1,0 +1,16 @@
+{
+  "format": "the-special-one-question-bank",
+  "version": 1,
+  "questions": [
+    {
+      "grade": "Primary 3",
+      "unit": "Unit 1",
+      "lesson": "Lesson 1",
+      "difficulty": "easy",
+      "kind": "choose",
+      "prompt": "Which word means ...?",
+      "answer": "REPLACE_WITH_CORRECT_ANSWER",
+      "options": ["REPLACE_WITH_CORRECT_ANSWER", "DISTRACTOR_1", "DISTRACTOR_2"]
+    }
+  ]
+}
