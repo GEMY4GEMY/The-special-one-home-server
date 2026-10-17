@@ -28,7 +28,32 @@
 <section class="dashboard hidden" id="dashboard" aria-live="polite">
  <div class="welcome"><div><span class="eyebrow">YOUR LEARNING SPACE</span><h2 id="welcome-title">Welcome!</h2><p id="welcome-subtitle">Here is your progress.</p></div><button class="outline" id="logout" type="button">Log out</button></div>
  <div id="student-area" class="hidden"><div class="stat-grid"><article class="stat"><span>Completed results</span><strong id="completed">0</strong></article><article class="stat"><span>Average score</span><strong id="average">—</strong></article></div><div class="panel"><h3>My exam results</h3><p class="muted">Only results linked to your account appear here.</p><div id="results" class="results"></div></div></div>
- <div id="admin-area" class="hidden"><div class="panel"><h3>Admin workspace</h3><p class="muted">Account and exam management will be added in the next stage. Student records are not displayed publicly.</p></div></div>
+ <div id="admin-area" class="hidden">
+<div class="panel admin-panel">
+<h3>Question Bank / بنك الأسئلة</h3>
+<p class="muted">Add questions from your approved curriculum materials.</p>
+<form id="question-form" class="admin-form">
+<label>Grade / الصف<input name="grade" required maxlength="80" placeholder="Primary 3"></label>
+<label>Unit / الوحدة<input name="unit" required maxlength="80" placeholder="Unit 1"></label>
+<label>Lesson / الدرس<input name="lesson" required maxlength="80" placeholder="Lesson 1"></label>
+<label>Difficulty / المستوى<select name="difficulty"><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select></label>
+<label>Question type / نوع السؤال<select name="kind" id="question-kind"><option value="choose">Choose</option><option value="fill">Fill in the gaps</option><option value="rearrange">Rearrange</option><option value="letters">Reorder letters</option></select></label>
+<label class="wide">Question / السؤال<textarea name="prompt" required maxlength="1000" rows="3"></textarea></label>
+<label class="wide">Correct answer / الإجابة<input name="answer" required maxlength="300"></label>
+<label class="wide">Options / الاختيارات (Choose only; one option per line)<textarea name="options" rows="4" placeholder="am&#10;is&#10;are"></textarea></label>
+<button class="primary" type="submit">Save question +</button>
+</form><p id="question-message" role="status"></p>
+</div>
+<div class="panel admin-panel"><h3>Generate exam draft / إنشاء مسودة امتحان</h3>
+<form id="draft-form" class="admin-form">
+<label>Exam title<input name="title" required placeholder="October Revision"></label>
+<label>Grade<input name="grade" required placeholder="Primary 3"></label>
+<label>Number of questions<select name="count"><option>20</option><option>40</option><option>60</option><option>80</option><option>100</option></select></label>
+<button class="primary" type="submit">Generate draft ✦</button>
+</form><p id="draft-message" role="status"></p>
+</div>
+<div class="panel admin-panel"><h3>Recent questions / الأسئلة المضافة</h3><button class="outline" id="refresh-questions" type="button">Refresh list</button><div id="question-list" class="results"></div></div>
+</div>
 </section>
 <section class="themes"><h2>Designed for every learner</h2><div class="theme-grid"><article class="theme primary-theme"><span class="theme-icon">🌈</span><h3>Primary</h3><p>Bright, playful and easy to use.</p></article><article class="theme prep-theme"><span class="theme-icon">🚀</span><h3>Preparatory</h3><p>Clear challenges and confidence.</p></article><article class="theme secondary-theme"><span class="theme-icon">🎓</span><h3>Secondary</h3><p>Focused practice and progress.</p></article></div></section>
 </main>
