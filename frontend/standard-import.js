@@ -3,7 +3,7 @@ document.addEventListener("DOMContentLoaded",()=>{
   const admin=document.getElementById("admin-area");
   if(!admin)return;
   for(const panel of admin.querySelectorAll(".admin-panel")){
-    if(panel.querySelector("h3")?.textContent?.includes("AI Question Suggestions"))panel.remove();
+    if(panel.querySelector("h3")?.textContent?.includes("AI Question Suggestions"))panel.classList.add("hidden");
   }
   const panel=document.createElement("div");panel.className="panel admin-panel";
   const title=document.createElement("h3");title.textContent="Import question bank / استيراد بنك الأسئلة";
