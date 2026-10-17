@@ -348,3 +348,23 @@ async def inspect_curriculum_pdf(file: UploadFile = File(...), user=Depends(admi
         "pages": pages,
         "status": "inspection_only"
     }
+
+from backend.local_ai import suggest_questions
+
+class AIPageRequest(BaseModel):
+    grade: str
+    page_number: int
+    page_text: str
+    count: int = 5
+
+@app.post("/api/admin/ai/suggest")
+def ai_suggest(payload: AIPageRequest, user=Depends(admin_only)):
+    if not payload.grade.strip() or not 1 <= payload.page_number <= 300 or len(payload.page_text) > 15000:
+        raise HTTPException(422, "Invalid source page")
+    try:
+        questions = suggest_questions(payload.page_text, payload.page_number, payload.grade, payload.count)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc))
+    except RuntimeError:
+        raise HTTPException(503, "Local AI unavailable")
+    return {"status": "pending_review", "questions": questions}
