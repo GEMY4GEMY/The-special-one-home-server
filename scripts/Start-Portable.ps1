@@ -18,6 +18,34 @@ if (-not (Test-Path $db)) {
         Remove-Item Env:TSO_ADMIN_INITIAL_PASSWORD -ErrorAction SilentlyContinue
     }
 }
+$ollama = Join-Path $root 'ai-engine\ollama.exe'
+if (Test-Path $ollama) {
+    $env:OLLAMA_MODELS = Join-Path $root 'ai-models'
+    New-Item -ItemType Directory -Force $env:OLLAMA_MODELS | Out-Null
+    $env:OLLAMA_HOST = '127.0.0.1:11434'
+    $env:TSO_AI_URL = 'http://127.0.0.1:11434/api/chat'
+    $env:TSO_AI_MODEL = 'qwen3-vl:32b-thinking'
+    $available = @()
+    try {
+        $models = & $ollama list 2>$null
+        $available = @($models)
+    } catch {}
+    if (-not $available) {
+        Start-Process -FilePath $ollama -ArgumentList 'serve' -WindowStyle Hidden
+        Start-Sleep -Seconds 3
+        try { $available = @(& $ollama list 2>$null) } catch {}
+    }
+    foreach ($candidate in @('qwen3-vl:32b-thinking','qwen3-vl:8b','qwen3-vl:4b','qwen3-vl:2b')) {
+        if ($available -match [regex]::Escape($candidate)) {
+            $env:TSO_AI_MODEL = $candidate
+            Write-Host ('Local AI model: ' + $candidate)
+            break
+        }
+    }
+    if (-not ($available -match 'qwen3-vl:')) {
+        Write-Warning 'Ollama engine included, but no local Qwen3-VL model is bundled. AI features require a model pack.'
+    }
+}
 Write-Host 'Starting THE SPECIAL ONE at http://localhost:100'
 Start-Process 'http://localhost:100'
 & $python -m uvicorn backend.app:app --host 0.0.0.0 --port 100 --workers 1
