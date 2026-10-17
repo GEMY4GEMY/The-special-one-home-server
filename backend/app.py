@@ -8,7 +8,8 @@ from pathlib import Path
 from datetime import datetime, timezone
 
 from fastapi import FastAPI, HTTPException, Request, Response, Depends
-from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel
 from pwdlib import PasswordHash
 
@@ -18,6 +19,8 @@ DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 ADMIN_USERNAME = os.environ.get("TSO_ADMIN_USERNAME", "Mrsameh")
 password_hash = PasswordHash.recommended()
 app = FastAPI(title="THE SPECIAL ONE Home Server", docs_url=None, redoc_url=None)
+FRONTEND = ROOT.parent / "frontend"
+app.mount("/static", StaticFiles(directory=str(FRONTEND)), name="static")
 sessions = {}
 
 @contextmanager
@@ -140,4 +143,4 @@ def my_results(user=Depends(current_user)):
 
 @app.get("/", response_class=HTMLResponse)
 def home():
-    return """<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>THE SPECIAL ONE</title><style>body{font-family:system-ui;background:#eef3fa;margin:0;padding:3rem 1rem;color:#152c4b}.panel{max-width:500px;margin:auto;background:white;border-radius:18px;padding:2rem;box-shadow:0 8px 30px #0001}input,button{box-sizing:border-box;width:100%;padding:14px;margin:8px 0;border-radius:10px;border:1px solid #ccd5e0}button{background:#1556ad;color:white;font-weight:700;cursor:pointer}</style><main class="panel"><h1>THE SPECIAL ONE</h1><p>Home Server — Local Network</p><form id="login"><input name="username" placeholder="Username" autocomplete="username" required><input name="password" type="password" placeholder="Password" autocomplete="current-password" required><button>Sign in</button></form><div id="view" aria-live="polite"></div></main><script>document.querySelector('#login').onsubmit=async e=>{e.preventDefault();const f=e.target;const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:f.username.value,password:f.password.value})});if(!r.ok){document.querySelector('#view').textContent='Login failed';return}const me=await r.json();f.hidden=true;const v=document.querySelector('#view');v.textContent='Signed in as '+me.username+' ('+me.role+')';if(me.role==='student'){const res=await fetch('/api/my-results');const items=await res.json();const ul=document.createElement('ul');items.forEach(x=>{const li=document.createElement('li');li.textContent=x.exam_title+': '+x.score+' / '+x.maximum;ul.append(li)});v.append(ul)}};</script></html>"""
+    return FileResponse(FRONTEND / "index.html")
