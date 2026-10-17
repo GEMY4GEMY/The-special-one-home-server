@@ -39,3 +39,8 @@ def standard_edition():
 @app.get('/standard-home')
 def standard_home():
     return FileResponse(FRONTEND / 'standard.html')
+
+# A separate public landing route for Standard. The original AI edition keeps '/'.
+@app.get("/api/standard/status")
+def standard_status():
+    return {"edition": "standard", "offline": True, "question_import": True}
