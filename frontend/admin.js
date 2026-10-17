@@ -70,3 +70,28 @@ function initAdminPanel(){
  refreshAdminQuestions();
 }
 document.addEventListener("DOMContentLoaded",initAdminPanel);
+
+document.addEventListener("DOMContentLoaded",()=>{
+ const form=document.getElementById("pdf-inspect-form");
+ form.addEventListener("submit",async event=>{
+  event.preventDefault();
+  const file=document.getElementById("curriculum-pdf").files[0];
+  const status=document.getElementById("pdf-inspect-status");
+  const result=document.getElementById("pdf-inspect-result");
+  if(!file)return;
+  status.textContent="Inspecting PDF...";result.replaceChildren();
+  const data=new FormData();data.append("file",file);
+  try{
+   const report=await adminRequest("/api/admin/pdf-inspect",{method:"POST",body:data});
+   status.textContent=report.page_count+" pages inspected; "+report.image_pages+" require vision/OCR.";
+   for(const page of report.pages){
+    const detail=document.createElement("details");
+    const summary=document.createElement("summary");
+    summary.textContent="Page "+page.page+(page.needs_vision?" — vision required":" — text available");
+    const pre=document.createElement("pre");
+    pre.textContent=page.text.slice(0,1500);
+    detail.append(summary,pre);result.append(detail);
+   }
+  }catch{status.textContent="PDF inspection failed. Check file type, size and login."}
+ });
+});
