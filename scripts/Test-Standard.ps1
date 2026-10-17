@@ -2,6 +2,7 @@ $ErrorActionPreference = 'Stop'
 $env:TSO_DB_PATH = Join-Path $env:RUNNER_TEMP 'standard-release-smoke.sqlite3'
 $env:TSO_ADMIN_INITIAL_PASSWORD = 'TemporaryTestPassword2026'
 $env:TSO_ADMIN_USERNAME = 'Mrsameh'
+$env:TSO_EDITION = 'standard'
 $server = Start-Process -FilePath (Join-Path (Get-Location) 'runtime/python.exe') -ArgumentList '-m','uvicorn','backend.standard_app:app','--host','127.0.0.1','--port','19000' -PassThru -WindowStyle Hidden
 try {
   $ready = $false
