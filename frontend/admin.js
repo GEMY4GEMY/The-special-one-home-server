@@ -133,7 +133,7 @@ async function generatePageQuestions(page){
    await new Promise(resolve=>setTimeout(resolve,2000));
    task=await adminRequest("/api/admin/ai/tasks/"+queued.task_id);
    status.textContent="AI task: "+task.state;
-   if(task.state==="complete"||task.state==="failed")break;
+   if(["complete","failed","interrupted"].includes(task.state))break;
   }
   if(!task||task.state!=="complete")throw new Error("AI task did not complete");
   const response={questions:task.output};
@@ -145,6 +145,7 @@ async function generatePageQuestions(page){
    const save=document.createElement("button");save.type="button";save.className="primary";save.textContent="Accept into question bank";
    save.onclick=()=>{
     const form=document.getElementById("question-form");
+    delete form.dataset.editId;
     for(const [name,value] of Object.entries({grade,kind:q.kind,difficulty:q.difficulty,prompt:q.prompt,answer:q.answer,options:q.options.join("\n")})){
      const field=form.elements.namedItem(name);if(field)field.value=value;
     }
