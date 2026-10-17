@@ -1,0 +1,43 @@
+name: Build Windows Standard (No AI)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'scripts/Start-Standard.ps1'
+      - 'START_STANDARD_WINDOWS.bat'
+      - '.github/workflows/windows-standard.yml'
+jobs:
+  standard:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          architecture: x64
+      - name: Bundle Python and dependencies without AI
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist/TheSpecialOneStandard/runtime/Lib/site-packages | Out-Null
+          Copy-Item backend,frontend,scripts,START_STANDARD_WINDOWS.bat dist/TheSpecialOneStandard -Recurse
+          curl.exe -fL --retry 3 -o python-embed.zip https://www.python.org/ftp/python/3.11.9/python-3.11.9-embed-amd64.zip
+          if ($LASTEXITCODE -ne 0) { throw 'Python download failed' }
+          Expand-Archive python-embed.zip -DestinationPath dist/TheSpecialOneStandard/runtime
+          @('python311.zip', '.', 'Lib/site-packages', '..', 'import site') | Set-Content dist/TheSpecialOneStandard/runtime/python311._pth
+          python -m pip install --disable-pip-version-check --target dist/TheSpecialOneStandard/runtime/Lib/site-packages -r backend/requirements.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Dependency packaging failed' }
+          Push-Location dist/TheSpecialOneStandard
+          ./runtime/python.exe -c "from backend.app import app; print(app.title)"
+          if ($LASTEXITCODE -ne 0) { throw 'Embedded runtime failed' }
+          Pop-Location
+      - name: Package Standard ZIP
+        shell: pwsh
+        run: Compress-Archive -Path dist/TheSpecialOneStandard -DestinationPath TheSpecialOne-Standard-Windows-x64.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TheSpecialOne-Standard-Windows-x64
+          path: TheSpecialOne-Standard-Windows-x64.zip
+          retention-days: 30
