@@ -224,3 +224,63 @@ def my_attempts(user=Depends(current_user)):
              created_at TEXT NOT NULL, UNIQUE(user_id, attempt_id))""")
         return [dict(row) for row in conn.execute(
             "SELECT exam_id,score,maximum,created_at FROM exam_attempts WHERE user_id=? ORDER BY id DESC", (user["id"],))]
+
+# Admin question bank and draft exam generator
+import json
+from backend.question_selection import choose_questions
+
+class QuestionCreate(BaseModel):
+    grade: str
+    unit: str
+    lesson: str
+    difficulty: str
+    kind: str
+    prompt: str
+    answer: str
+    options: list[str] = []
+
+class ExamDraftCreate(BaseModel):
+    title: str
+    grade: str
+    count: int = 20
+
+def init_question_tables(conn):
+    conn.execute("CREATE TABLE IF NOT EXISTS question_bank (id INTEGER PRIMARY KEY, grade TEXT, unit TEXT, lesson TEXT, difficulty TEXT, kind TEXT, prompt TEXT, answer TEXT, options TEXT)")
+    conn.execute("CREATE TABLE IF NOT EXISTS exam_drafts (id TEXT PRIMARY KEY, title TEXT, grade TEXT, question_ids TEXT)")
+
+@app.post("/api/admin/question-bank")
+def add_bank_question(payload: QuestionCreate, user=Depends(admin_only)):
+    if payload.kind not in ("choose", "fill", "rearrange", "letters"):
+        raise HTTPException(400, "Invalid question type")
+    if payload.difficulty not in ("easy", "medium", "hard"):
+        raise HTTPException(400, "Invalid difficulty")
+    if not all(s.strip() for s in (payload.grade, payload.unit, payload.lesson, payload.prompt, payload.answer)):
+        raise HTTPException(400, "Required field missing")
+    if len(payload.prompt) > 1000 or len(payload.answer) > 300:
+        raise HTTPException(400, "Text too long")
+    if payload.kind == "choose" and (len(payload.options) < 2 or payload.answer not in payload.options):
+        raise HTTPException(400, "Choose questions require valid options and answer")
+    with db() as conn:
+        init_question_tables(conn)
+        cursor = conn.execute("INSERT INTO question_bank(grade,unit,lesson,difficulty,kind,prompt,answer,options) VALUES (?,?,?,?,?,?,?,?)", (payload.grade, payload.unit, payload.lesson, payload.difficulty, payload.kind, payload.prompt, payload.answer, json.dumps(payload.options)))
+        return {"id": cursor.lastrowid}
+
+@app.get("/api/admin/question-bank")
+def list_bank_questions(grade: str = "", user=Depends(admin_only)):
+    with db() as conn:
+        init_question_tables(conn)
+        rows = conn.execute("SELECT * FROM question_bank WHERE (? = '' OR grade = ?) ORDER BY id DESC LIMIT 500", (grade, grade)).fetchall()
+        return [dict(row) for row in rows]
+
+@app.post("/api/admin/exam-drafts")
+def generate_exam_draft(payload: ExamDraftCreate, user=Depends(admin_only)):
+    with db() as conn:
+        init_question_tables(conn)
+        rows = conn.execute("SELECT id,kind,difficulty FROM question_bank WHERE grade=?", (payload.grade,)).fetchall()
+        try:
+            selected = choose_questions(rows, payload.count)
+        except ValueError as exc:
+            raise HTTPException(422, str(exc))
+        draft_id = secrets.token_urlsafe(18)
+        conn.execute("INSERT INTO exam_drafts(id,title,grade,question_ids) VALUES (?,?,?,?)", (draft_id, payload.title, payload.grade, json.dumps(selected)))
+        return {"id": draft_id, "question_count": len(selected), "status": "draft"}
