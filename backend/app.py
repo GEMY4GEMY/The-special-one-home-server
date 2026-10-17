@@ -35,8 +35,9 @@ def db():
 
 @app.on_event("startup")
 def initialize():
-    from backend.ai_queue import initialize as initialize_ai_queue
-    initialize_ai_queue()
+    if os.environ.get('TSO_EDITION') != 'standard':
+        from backend.ai_queue import initialize as initialize_ai_queue
+        initialize_ai_queue()
     with db() as conn:
         conn.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, username TEXT UNIQUE NOT NULL, password_hash TEXT NOT NULL, role TEXT NOT NULL)")
         conn.execute("CREATE TABLE IF NOT EXISTS students (id INTEGER PRIMARY KEY, user_id INTEGER UNIQUE NOT NULL REFERENCES users(id), student_code TEXT UNIQUE NOT NULL, full_name TEXT NOT NULL, grade TEXT NOT NULL)")
