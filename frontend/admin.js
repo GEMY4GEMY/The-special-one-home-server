@@ -124,8 +124,17 @@ async function generatePageQuestions(page){
  const grade=document.getElementById("ai-grade").value.trim();
  if(!grade){status.textContent="Enter a grade first.";return}
  try{
-  const response=await adminRequest("/api/admin/ai/suggest",{method:"POST",headers:{"Content-Type":"application/json"},
+  const queued=await adminRequest("/api/admin/ai/suggest-async",{method:"POST",headers:{"Content-Type":"application/json"},
    body:JSON.stringify({grade,page_number:page.page,page_text:page.text,count:Number(document.getElementById("ai-count").value)})});
+  let task;
+  for(let i=0;i<120;i++){
+   await new Promise(resolve=>setTimeout(resolve,2000));
+   task=await adminRequest("/api/admin/ai/tasks/"+queued.task_id);
+   status.textContent="AI task: "+task.state;
+   if(task.state==="complete"||task.state==="failed")break;
+  }
+  if(!task||task.state!=="complete")throw new Error("AI task did not complete");
+  const response={questions:task.output};
   status.textContent=response.questions.length+" suggestions. Review before saving.";
   for(const q of response.questions){
    const card=document.createElement("article");card.className="panel";
