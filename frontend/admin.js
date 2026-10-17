@@ -150,6 +150,8 @@ async function generatePageQuestions(page){
    save.onclick=()=>{
     const form=document.getElementById("question-form");
     delete form.dataset.editId;
+    form.elements.namedItem("unit").value="";
+    form.elements.namedItem("lesson").value="";
     for(const [name,value] of Object.entries({grade,kind:q.kind,difficulty:q.difficulty,prompt:q.prompt,answer:q.answer,options:q.options.join("\n")})){
      const field=form.elements.namedItem(name);if(field)field.value=value;
     }
