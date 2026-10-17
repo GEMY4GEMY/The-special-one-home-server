@@ -14,8 +14,24 @@ async function refreshAdminQuestions(){
   for(const question of questions){
    const row=document.createElement("div");
    row.className="result-item";
-   row.textContent=[question.grade,question.unit,question.kind,question.prompt].join(" | ");
-   list.append(row);
+   const label=document.createElement("span");
+   label.textContent=[question.grade,question.unit,question.kind,question.prompt].join(" | ");
+   const edit=document.createElement("button");edit.type="button";edit.className="outline";edit.textContent="Edit";
+   edit.addEventListener("click",()=>{
+    const fields={"q-grade":"grade","q-unit":"unit","q-lesson":"lesson","q-difficulty":"difficulty","q-kind":"kind","q-prompt":"prompt","q-answer":"answer"};
+    for(const [id,key] of Object.entries(fields))document.getElementById(id).value=question[key];
+    document.getElementById("q-options").value=JSON.parse(question.options||"[]").join("\\n");
+    document.getElementById("question-form").dataset.editId=question.id;
+    document.getElementById("question-message").textContent="Editing question #"+question.id;
+    document.getElementById("question-form").scrollIntoView({behavior:"smooth"});
+   });
+   const del=document.createElement("button");del.type="button";del.className="outline";del.textContent="Delete";
+   del.addEventListener("click",async()=>{
+    if(!confirm("Delete this question?"))return;
+    try{await adminRequest("/api/admin/question-bank/"+question.id,{method:"DELETE"});await refreshAdminQuestions()}
+    catch{showAdminMessage("question-message","Cannot delete question used in a draft.")}
+   });
+   row.append(label,edit,del);list.append(row);
   }
  }catch{list.textContent="Could not load questions."}
 }
@@ -35,7 +51,9 @@ function initAdminPanel(){
    options:$("q-options").value.split("\n").map(s=>s.trim()).filter(Boolean)
   };
   try{
-   await adminRequest("/api/admin/question-bank",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
+   const editId=$("question-form").dataset.editId;
+   await adminRequest(editId?"/api/admin/question-bank/"+editId:"/api/admin/question-bank",{method:editId?"PUT":"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
+   delete $("question-form").dataset.editId;
    showAdminMessage("question-message","Question saved successfully.");
    $("q-prompt").value="";$("q-answer").value="";$("q-options").value="";
    await refreshAdminQuestions();
