@@ -19,5 +19,5 @@ if (-not (Test-Path $env:TSO_DB_PATH)) {
     }
 }
 Write-Host 'THE SPECIAL ONE Standard - No AI required'
-Start-Process 'http://localhost:100/standard-home'
-& $python -m uvicorn backend.standard_app:app --host 0.0.0.0 --port 100 --workers 1
+Start-Process 'http://localhost:200/standard-home'
+& $python -m uvicorn backend.standard_app:app --host 0.0.0.0 --port 200 --workers 1
