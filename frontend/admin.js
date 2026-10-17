@@ -84,7 +84,10 @@ document.addEventListener("DOMContentLoaded",()=>{
   try{
    const report=await adminRequest("/api/admin/pdf-inspect",{method:"POST",body:data});
    status.textContent=report.page_count+" pages inspected; "+report.image_pages+" require vision/OCR.";
+   window.tsoPdfPages=report.pages;
+   const pageList=document.getElementById("ai-page-list");pageList.replaceChildren();
    for(const page of report.pages){
+    if(page.text){const button=document.createElement("button");button.type="button";button.className="outline";button.textContent="Generate from page "+page.page;button.onclick=()=>generatePageQuestions(page);pageList.append(button)}
     const detail=document.createElement("details");
     const summary=document.createElement("summary");
     summary.textContent="Page "+page.page+(page.needs_vision?" — vision required":" — text available");
@@ -95,3 +98,31 @@ document.addEventListener("DOMContentLoaded",()=>{
   }catch{status.textContent="PDF inspection failed. Check file type, size and login."}
  });
 });
+
+async function generatePageQuestions(page){
+ const status=document.getElementById("ai-status");
+ const list=document.getElementById("ai-suggestions");
+ list.replaceChildren();status.textContent="Generating suggestions locally...";
+ const grade=document.getElementById("ai-grade").value.trim();
+ if(!grade){status.textContent="Enter a grade first.";return}
+ try{
+  const response=await adminRequest("/api/admin/ai/suggest",{method:"POST",headers:{"Content-Type":"application/json"},
+   body:JSON.stringify({grade,page_number:page.page,page_text:page.text,count:Number(document.getElementById("ai-count").value)})});
+  status.textContent=response.questions.length+" suggestions. Review before saving.";
+  for(const q of response.questions){
+   const card=document.createElement("article");card.className="panel";
+   const prompt=document.createElement("p");prompt.textContent=q.prompt;
+   const evidence=document.createElement("small");evidence.textContent="Source page "+q.source_page+": "+q.evidence_quote;
+   const save=document.createElement("button");save.type="button";save.className="primary";save.textContent="Accept into question bank";
+   save.onclick=()=>{
+    const form=document.getElementById("question-form");
+    for(const [name,value] of Object.entries({grade,kind:q.kind,difficulty:q.difficulty,prompt:q.prompt,answer:q.answer,options:q.options.join("\n")})){
+     const field=form.elements.namedItem(name);if(field)field.value=value;
+    }
+    document.getElementById("question-message").textContent="Review unit and lesson, then press Save question.";
+    form.scrollIntoView({behavior:"smooth"});
+   };
+   card.append(prompt,evidence,save);list.append(card);
+  }
+ }catch{status.textContent="Local AI not ready. Check model service and configuration."}
+}
