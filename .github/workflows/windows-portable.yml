@@ -6,7 +6,7 @@ on:
     paths:
       - 'backend/**'
       - 'frontend/**'
-      - 'scripts/Start-Portable.ps1'
+      - 'scripts/**'
       - 'START_PORTABLE_WINDOWS.bat'
       - '.github/workflows/windows-portable.yml'
 jobs:
@@ -39,6 +39,35 @@ jobs:
           Invoke-WebRequest $asset.browser_download_url -OutFile ollama-windows.zip
           Expand-Archive ollama-windows.zip -DestinationPath dist/TheSpecialOne/ai-engine
           if (-not (Test-Path dist/TheSpecialOne/ai-engine/ollama.exe)) { throw 'Ollama binary missing' }
+      - name: Download compact offline AI model
+        shell: pwsh
+        run: |
+          Push-Location dist/TheSpecialOne
+          $env:OLLAMA_MODELS = (Join-Path (Get-Location) 'ai-models')
+          $env:OLLAMA_HOST = '127.0.0.1:11434'
+          New-Item -ItemType Directory -Force $env:OLLAMA_MODELS | Out-Null
+          $ollama = Join-Path (Get-Location) 'ai-engine/ollama.exe'
+          $server = Start-Process -FilePath $ollama -ArgumentList 'serve' -PassThru -WindowStyle Hidden
+          try {
+            $ready = $false
+            for ($i = 0; $i -lt 30; $i++) {
+              try {
+                Invoke-RestMethod 'http://127.0.0.1:11434/api/tags' -TimeoutSec 2 | Out-Null
+                $ready = $true
+                break
+              } catch { Start-Sleep -Seconds 2 }
+            }
+            if (-not $ready) { throw 'Ollama did not start on the build runner' }
+            & $ollama pull qwen3-vl:4b
+            if ($LASTEXITCODE -ne 0) { throw 'Model download failed' }
+            $tags = Invoke-RestMethod 'http://127.0.0.1:11434/api/tags'
+            if (-not (@($tags.models | ForEach-Object { $_.name }) -contains 'qwen3-vl:4b')) {
+              throw 'Model not available after download'
+            }
+          } finally {
+            Stop-Process -Id $server.Id -ErrorAction SilentlyContinue
+            Pop-Location
+          }
       - name: Smoke-test embedded runtime
         shell: pwsh
         run: |
