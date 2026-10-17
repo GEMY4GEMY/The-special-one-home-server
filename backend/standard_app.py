@@ -29,3 +29,7 @@ async def import_question_bank(file: UploadFile = File(...), user=Depends(admin_
             rows,
         )
     return {"imported": len(rows), "status": "complete"}
+
+@app.get('/api/edition')
+def standard_edition():
+    return {'edition':'standard'}
