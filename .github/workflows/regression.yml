@@ -29,3 +29,5 @@ jobs:
         run: |
           node --check frontend/app.js
           node --check frontend/admin.js
+      - name: Run admin UI regression checks
+        run: node --test tests/*.test.cjs
