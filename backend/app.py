@@ -144,3 +144,83 @@ def my_results(user=Depends(current_user)):
 @app.get("/", response_class=HTMLResponse)
 def home():
     return FileResponse(FRONTEND / "index.html")
+
+
+# Demonstration exam engine. Questions are illustrative, NOT from uploaded curricula.
+class AnswerItem(BaseModel):
+    question_id: str
+    answer: str
+
+class ExamSubmission(BaseModel):
+    attempt_id: str
+    answers: list[AnswerItem]
+
+DEMO_QUESTIONS = [
+    {"id": "d1", "type": "choose", "prompt": "Choose the correct word: I ___ a student.", "options": ["am", "is", "are"], "answer": "am"},
+    {"id": "d2", "type": "rearrange", "prompt": "Rearrange the words: (school / go / I / to)", "tokens": ["school", "go", "I", "to"], "answer": "I go to school"},
+    {"id": "d3", "type": "fill", "prompt": "Fill in the gap: She ___ happy. (is / are)", "answer": "is"},
+    {"id": "d4", "type": "letters", "prompt": "Reorder the letters to make a word: P L A E P", "answer": "apple"},
+]
+DEMO_EXAM_ID = "demo-english-001"
+
+@app.get("/api/exams")
+def list_exams(user=Depends(current_user)):
+    if user["role"] != "student":
+        raise HTTPException(403, "Student access only")
+    return [{"id": DEMO_EXAM_ID, "title": "English Skills — Demo Only", "question_count": len(DEMO_QUESTIONS), "demo": True}]
+
+@app.get("/api/exams/{exam_id}")
+def get_exam(exam_id: str, user=Depends(current_user)):
+    if user["role"] != "student":
+        raise HTTPException(403, "Student access only")
+    if exam_id != DEMO_EXAM_ID:
+        raise HTTPException(404, "Exam not found")
+    return {"id": DEMO_EXAM_ID, "title": "English Skills — Demo Only", "demo": True,
+            "questions": [{k: v for k, v in q.items() if k != "answer"} for q in DEMO_QUESTIONS]}
+
+@app.post("/api/exams/{exam_id}/submit")
+def submit_exam(exam_id: str, payload: ExamSubmission, user=Depends(current_user)):
+    if user["role"] != "student":
+        raise HTTPException(403, "Student access only")
+    if exam_id != DEMO_EXAM_ID:
+        raise HTTPException(404, "Exam not found")
+    if not (8 <= len(payload.attempt_id) <= 100):
+        raise HTTPException(400, "Invalid attempt ID")
+    if len(payload.answers) > len(DEMO_QUESTIONS):
+        raise HTTPException(400, "Too many answers")
+    submitted = {}
+    valid_ids = {q["id"] for q in DEMO_QUESTIONS}
+    for item in payload.answers:
+        if item.question_id not in valid_ids or item.question_id in submitted or len(item.answer) > 500:
+            raise HTTPException(400, "Invalid or duplicate question")
+        submitted[item.question_id] = item.answer
+    def normalize(value):
+        return " ".join(value.strip().casefold().split()).rstrip(".!?")
+    score = sum(normalize(submitted.get(q["id"], "")) == normalize(q["answer"]) for q in DEMO_QUESTIONS)
+    with db() as conn:
+        conn.execute("""CREATE TABLE IF NOT EXISTS exam_attempts
+            (id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL, exam_id TEXT NOT NULL,
+             attempt_id TEXT NOT NULL, score INTEGER NOT NULL, maximum INTEGER NOT NULL,
+             created_at TEXT NOT NULL, UNIQUE(user_id, attempt_id))""")
+        prior = conn.execute("SELECT exam_id,score,maximum FROM exam_attempts WHERE user_id=? AND attempt_id=?",
+                             (user["id"], payload.attempt_id)).fetchone()
+        if prior:
+            if prior["exam_id"] != exam_id:
+                raise HTTPException(409, "Attempt ID already used for another exam")
+            return {"score": prior["score"], "maximum": prior["maximum"], "already_submitted": True}
+        conn.execute("INSERT INTO exam_attempts(user_id,exam_id,attempt_id,score,maximum,created_at) VALUES (?,?,?,?,?,?)",
+                     (user["id"], exam_id, payload.attempt_id, score, len(DEMO_QUESTIONS),
+                      datetime.now(timezone.utc).isoformat()))
+    return {"score": score, "maximum": len(DEMO_QUESTIONS), "already_submitted": False}
+
+@app.get("/api/my-attempts")
+def my_attempts(user=Depends(current_user)):
+    if user["role"] != "student":
+        raise HTTPException(403, "Student access only")
+    with db() as conn:
+        conn.execute("""CREATE TABLE IF NOT EXISTS exam_attempts
+            (id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL, exam_id TEXT NOT NULL,
+             attempt_id TEXT NOT NULL, score INTEGER NOT NULL, maximum INTEGER NOT NULL,
+             created_at TEXT NOT NULL, UNIQUE(user_id, attempt_id))""")
+        return [dict(row) for row in conn.execute(
+            "SELECT exam_id,score,maximum,created_at FROM exam_attempts WHERE user_id=? ORDER BY id DESC", (user["id"],))]
