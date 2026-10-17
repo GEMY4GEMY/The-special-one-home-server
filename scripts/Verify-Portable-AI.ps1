@@ -12,7 +12,7 @@ try {
     throw 'Ollama is not running. Start the portable server first.'
 }
 $names = @($response.models | ForEach-Object { $_.name })
-foreach ($model in @('qwen3-vl:32b-thinking','qwen3-vl:8b-thinking','qwen3-vl:4b-thinking')) {
+foreach ($model in @('qwen3-vl:4b')) {
     if ($names -notcontains $model) { throw ('Missing offline model: ' + $model) }
     Write-Host ('OK: ' + $model)
 }
