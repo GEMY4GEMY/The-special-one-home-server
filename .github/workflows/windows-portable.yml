@@ -75,6 +75,31 @@ jobs:
           ./runtime/python.exe -c "import fastapi,uvicorn,pypdf,fitz,multipart,pwdlib; from backend.app import app; print(app.title)"
           if ($LASTEXITCODE -ne 0) { throw 'Portable runtime smoke test failed' }
           Pop-Location
+      - name: Smoke-test actual HTTP server with temporary database
+        shell: pwsh
+        run: |
+          Push-Location dist/TheSpecialOne
+          $env:TSO_DB_PATH = Join-Path $env:RUNNER_TEMP 'tso-portable-smoke.sqlite3'
+          $env:TSO_ADMIN_INITIAL_PASSWORD = 'TemporarySmokeTestPassword_2026'
+          $server = Start-Process -FilePath (Join-Path (Get-Location) 'runtime/python.exe') -ArgumentList '-m','uvicorn','backend.app:app','--host','127.0.0.1','--port','18999' -PassThru -WindowStyle Hidden
+          try {
+            $ready = $false
+            for ($i = 0; $i -lt 30; $i++) {
+              try {
+                $health = Invoke-RestMethod 'http://127.0.0.1:18999/health' -TimeoutSec 2
+                if ($health.status -eq 'ok') { $ready = $true; break }
+              } catch { Start-Sleep -Seconds 2 }
+            }
+            if (-not $ready) { throw 'Portable server HTTP health test failed' }
+            $payload = @{username='Mrsameh';password=$env:TSO_ADMIN_INITIAL_PASSWORD} | ConvertTo-Json
+            $login = Invoke-RestMethod 'http://127.0.0.1:18999/api/login' -Method Post -Body $payload -ContentType 'application/json'
+            if ($login.role -ne 'admin') { throw 'Portable admin login test failed' }
+            Write-Host 'HTTP server and admin login smoke tests passed'
+          } finally {
+            Stop-Process -Id $server.Id -ErrorAction SilentlyContinue
+            Remove-Item Env:TSO_ADMIN_INITIAL_PASSWORD -ErrorAction SilentlyContinue
+            Pop-Location
+          }
       - name: Package offline Windows bundle in 1.5 GB parts
         shell: pwsh
         run: |
