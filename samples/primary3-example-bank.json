@@ -8,8 +8,8 @@
       "lesson": "Sample Lesson",
       "difficulty": "easy",
       "kind": "choose",
-      "prompt": "Choose: I ___ a student. (Sample 1)",
-      "answer": "am",
+      "prompt": "Choose: She ___ my friend.",
+      "answer": "is",
       "options": [
         "am",
         "is",
@@ -20,14 +20,28 @@
       "grade": "Primary 3",
       "unit": "Unit 1",
       "lesson": "Sample Lesson",
-      "difficulty": "easy",
+      "difficulty": "medium",
       "kind": "choose",
-      "prompt": "Choose: I ___ a student. (Sample 2)",
-      "answer": "am",
+      "prompt": "Choose: They ___ at school.",
+      "answer": "are",
       "options": [
-        "am",
         "is",
-        "are"
+        "are",
+        "am"
+      ]
+    },
+    {
+      "grade": "Primary 3",
+      "unit": "Unit 1",
+      "lesson": "Sample Lesson",
+      "difficulty": "hard",
+      "kind": "choose",
+      "prompt": "Choose: I ___ a pencil.",
+      "answer": "have",
+      "options": [
+        "has",
+        "have",
+        "having"
       ]
     },
     {
@@ -36,110 +50,104 @@
       "lesson": "Sample Lesson",
       "difficulty": "easy",
       "kind": "choose",
-      "prompt": "Choose: I ___ a student. (Sample 3)",
-      "answer": "am",
+      "prompt": "Choose: He ___ football.",
+      "answer": "plays",
       "options": [
-        "am",
-        "is",
-        "are"
+        "play",
+        "plays",
+        "playing"
       ]
     },
     {
       "grade": "Primary 3",
       "unit": "Unit 1",
       "lesson": "Sample Lesson",
-      "difficulty": "easy",
+      "difficulty": "medium",
       "kind": "choose",
-      "prompt": "Choose: I ___ a student. (Sample 4)",
-      "answer": "am",
+      "prompt": "Choose: We ___ English.",
+      "answer": "study",
       "options": [
-        "am",
-        "is",
-        "are"
+        "studies",
+        "study",
+        "studying"
       ]
     },
     {
       "grade": "Primary 3",
       "unit": "Unit 1",
       "lesson": "Sample Lesson",
-      "difficulty": "easy",
-      "kind": "choose",
-      "prompt": "Choose: I ___ a student. (Sample 5)",
-      "answer": "am",
-      "options": [
-        "am",
-        "is",
-        "are"
-      ]
+      "difficulty": "hard",
+      "kind": "fill",
+      "prompt": "Complete: My name ___ Ali.",
+      "answer": "is",
+      "options": []
     },
     {
       "grade": "Primary 3",
       "unit": "Unit 1",
       "lesson": "Sample Lesson",
       "difficulty": "easy",
-      "kind": "choose",
-      "prompt": "Choose: I ___ a student. (Sample 6)",
+      "kind": "fill",
+      "prompt": "Complete: I ___ ten years old.",
       "answer": "am",
-      "options": [
-        "am",
-        "is",
-        "are"
-      ]
+      "options": []
+    },
+    {
+      "grade": "Primary 3",
+      "unit": "Unit 1",
+      "lesson": "Sample Lesson",
+      "difficulty": "medium",
+      "kind": "fill",
+      "prompt": "Complete: The sky is ___.",
+      "answer": "blue",
+      "options": []
+    },
+    {
+      "grade": "Primary 3",
+      "unit": "Unit 1",
+      "lesson": "Sample Lesson",
+      "difficulty": "hard",
+      "kind": "rearrange",
+      "prompt": "Rearrange: (am / I / happy)",
+      "answer": "I am happy",
+      "options": []
     },
     {
       "grade": "Primary 3",
       "unit": "Unit 1",
       "lesson": "Sample Lesson",
       "difficulty": "easy",
+      "kind": "letters",
+      "prompt": "Reorder letters: (b / o / o / k)",
+      "answer": "book",
+      "options": []
+    },
+    {
+      "grade": "Primary 3",
+      "unit": "Unit 2",
+      "lesson": "Sample Lesson",
+      "difficulty": "medium",
       "kind": "choose",
-      "prompt": "Choose: I ___ a student. (Sample 7)",
-      "answer": "am",
+      "prompt": "Choose: This ___ my bag.",
+      "answer": "is",
       "options": [
-        "am",
+        "are",
         "is",
-        "are"
+        "am"
       ]
     },
     {
       "grade": "Primary 3",
-      "unit": "Unit 1",
+      "unit": "Unit 2",
       "lesson": "Sample Lesson",
-      "difficulty": "easy",
+      "difficulty": "hard",
       "kind": "choose",
-      "prompt": "Choose: I ___ a student. (Sample 8)",
-      "answer": "am",
+      "prompt": "Choose: Birds can ___.",
+      "answer": "fly",
       "options": [
-        "am",
-        "is",
-        "are"
-      ]
-    },
-    {
-      "grade": "Primary 3",
-      "unit": "Unit 1",
-      "lesson": "Sample Lesson",
-      "difficulty": "easy",
-      "kind": "choose",
-      "prompt": "Choose: I ___ a student. (Sample 9)",
-      "answer": "am",
-      "options": [
-        "am",
-        "is",
-        "are"
-      ]
-    },
-    {
-      "grade": "Primary 3",
-      "unit": "Unit 1",
-      "lesson": "Sample Lesson",
-      "difficulty": "easy",
-      "kind": "choose",
-      "prompt": "Choose: I ___ a student. (Sample 10)",
-      "answer": "am",
-      "options": [
-        "am",
-        "is",
-        "are"
+        "fly",
+        "swim",
+        "read"
       ]
     },
     {
@@ -148,12 +156,39 @@
       "lesson": "Sample Lesson",
       "difficulty": "easy",
       "kind": "choose",
-      "prompt": "Choose: I ___ a student. (Sample 11)",
-      "answer": "am",
+      "prompt": "Choose: My mother ___ kind.",
+      "answer": "is",
       "options": [
-        "am",
-        "is",
-        "are"
+        "are",
+        "am"
+      ]
+    },
+    {
+      "grade": "Primary 3",
+      "unit": "Unit 2",
+      "lesson": "Sample Lesson",
+      "difficulty": "medium",
+      "kind": "choose",
+      "prompt": "Choose: The cat is ___ the table.",
+      "answer": "under",
+      "options": [
+        "under",
+        "happy",
+        "seven"
+      ]
+    },
+    {
+      "grade": "Primary 3",
+      "unit": "Unit 2",
+      "lesson": "Sample Lesson",
+      "difficulty": "hard",
+      "kind": "choose",
+      "prompt": "Choose: I go to school ___ the morning.",
+      "answer": "in",
+      "options": [
+        "on",
+        "at",
+        "in"
       ]
     },
     {
@@ -161,126 +196,50 @@
       "unit": "Unit 2",
       "lesson": "Sample Lesson",
       "difficulty": "easy",
-      "kind": "choose",
-      "prompt": "Choose: I ___ a student. (Sample 12)",
-      "answer": "am",
-      "options": [
-        "am",
-        "is",
-        "are"
-      ]
+      "kind": "fill",
+      "prompt": "Complete: I brush my ___ every day.",
+      "answer": "teeth",
+      "options": []
+    },
+    {
+      "grade": "Primary 3",
+      "unit": "Unit 2",
+      "lesson": "Sample Lesson",
+      "difficulty": "medium",
+      "kind": "fill",
+      "prompt": "Complete: We drink ___.",
+      "answer": "water",
+      "options": []
+    },
+    {
+      "grade": "Primary 3",
+      "unit": "Unit 2",
+      "lesson": "Sample Lesson",
+      "difficulty": "hard",
+      "kind": "fill",
+      "prompt": "Complete: A week has seven ___.",
+      "answer": "days",
+      "options": []
     },
     {
       "grade": "Primary 3",
       "unit": "Unit 2",
       "lesson": "Sample Lesson",
       "difficulty": "easy",
-      "kind": "choose",
-      "prompt": "Choose: I ___ a student. (Sample 13)",
-      "answer": "am",
-      "options": [
-        "am",
-        "is",
-        "are"
-      ]
+      "kind": "rearrange",
+      "prompt": "Rearrange: (is / This / a / pen)",
+      "answer": "This is a pen",
+      "options": []
     },
     {
       "grade": "Primary 3",
       "unit": "Unit 2",
       "lesson": "Sample Lesson",
-      "difficulty": "easy",
-      "kind": "choose",
-      "prompt": "Choose: I ___ a student. (Sample 14)",
-      "answer": "am",
-      "options": [
-        "am",
-        "is",
-        "are"
-      ]
-    },
-    {
-      "grade": "Primary 3",
-      "unit": "Unit 2",
-      "lesson": "Sample Lesson",
-      "difficulty": "easy",
-      "kind": "choose",
-      "prompt": "Choose: I ___ a student. (Sample 15)",
-      "answer": "am",
-      "options": [
-        "am",
-        "is",
-        "are"
-      ]
-    },
-    {
-      "grade": "Primary 3",
-      "unit": "Unit 2",
-      "lesson": "Sample Lesson",
-      "difficulty": "easy",
-      "kind": "choose",
-      "prompt": "Choose: I ___ a student. (Sample 16)",
-      "answer": "am",
-      "options": [
-        "am",
-        "is",
-        "are"
-      ]
-    },
-    {
-      "grade": "Primary 3",
-      "unit": "Unit 2",
-      "lesson": "Sample Lesson",
-      "difficulty": "easy",
-      "kind": "choose",
-      "prompt": "Choose: I ___ a student. (Sample 17)",
-      "answer": "am",
-      "options": [
-        "am",
-        "is",
-        "are"
-      ]
-    },
-    {
-      "grade": "Primary 3",
-      "unit": "Unit 2",
-      "lesson": "Sample Lesson",
-      "difficulty": "easy",
-      "kind": "choose",
-      "prompt": "Choose: I ___ a student. (Sample 18)",
-      "answer": "am",
-      "options": [
-        "am",
-        "is",
-        "are"
-      ]
-    },
-    {
-      "grade": "Primary 3",
-      "unit": "Unit 2",
-      "lesson": "Sample Lesson",
-      "difficulty": "easy",
-      "kind": "choose",
-      "prompt": "Choose: I ___ a student. (Sample 19)",
-      "answer": "am",
-      "options": [
-        "am",
-        "is",
-        "are"
-      ]
-    },
-    {
-      "grade": "Primary 3",
-      "unit": "Unit 2",
-      "lesson": "Sample Lesson",
-      "difficulty": "easy",
-      "kind": "choose",
-      "prompt": "Choose: I ___ a student. (Sample 20)",
-      "answer": "am",
-      "options": [
-        "am",
-        "is",
-        "are"
-      ]
+      "difficulty": "medium",
+      "kind": "letters",
+      "prompt": "Reorder letters: (a / p / p / l / e)",
+      "answer": "apple",
+      "options": []
     }
   ]
 }
