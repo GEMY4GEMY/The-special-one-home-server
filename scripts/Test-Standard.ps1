@@ -80,6 +80,16 @@ try {
   if ($overview.total -ne 2) { throw 'Admin dashboard should show both teacher and practice attempts' }
   $filtered = Invoke-RestMethod 'http://127.0.0.1:19000/api/admin/standard/results?grade=Primary%203' -WebSession $admin
   if ($filtered.total -ne 2 -or $filtered.students -ne 1) { throw 'Admin grade filtering failed' }
+  $xlsxPath = Join-Path $env:RUNNER_TEMP 'tso-results-test.xlsx'
+  $pdfPath = Join-Path $env:RUNNER_TEMP 'tso-results-test.pdf'
+  Invoke-WebRequest 'http://127.0.0.1:19000/api/admin/standard/export.xlsx?grade=Primary%203' -WebSession $admin -OutFile $xlsxPath
+  Invoke-WebRequest 'http://127.0.0.1:19000/api/admin/standard/export.pdf?grade=Primary%203' -WebSession $admin -OutFile $pdfPath
+  $xlsxBytes = [System.IO.File]::ReadAllBytes($xlsxPath)
+  $pdfBytes = [System.IO.File]::ReadAllBytes($pdfPath)
+  if ($xlsxBytes.Length -lt 1000 -or $xlsxBytes[0] -ne 80 -or $xlsxBytes[1] -ne 75) { throw 'Excel report is not a valid XLSX archive' }
+  if ($pdfBytes.Length -lt 1000 -or [System.Text.Encoding]::ASCII.GetString($pdfBytes,0,4) -ne '%PDF') { throw 'PDF report is not valid' }
+  $printPage = Invoke-WebRequest 'http://127.0.0.1:19000/api/admin/standard/print?grade=Primary%203' -WebSession $admin
+  if ($printPage.Content -notmatch 'THE SPECIAL ONE') { throw 'Print view failed' }
   Write-Host 'PASS: login, import, publish, activation, student exam, practice, grading, results'
 } finally {
   Stop-Process -Id $server.Id -ErrorAction SilentlyContinue
