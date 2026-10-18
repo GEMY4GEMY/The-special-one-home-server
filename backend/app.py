@@ -46,8 +46,8 @@ def initialize():
         existing = conn.execute("SELECT id FROM users WHERE username=?", (ADMIN_USERNAME,)).fetchone()
         if not existing:
             initial = os.environ.get("TSO_ADMIN_INITIAL_PASSWORD")
-            if not initial:
-                raise RuntimeError("Set TSO_ADMIN_INITIAL_PASSWORD before first startup; never commit it.")
+            if not initial or len(initial) < 12:
+                raise RuntimeError("Set TSO_ADMIN_INITIAL_PASSWORD (at least 12 characters) before first startup; never commit it.")
             conn.execute("INSERT INTO users(username,password_hash,role) VALUES (?,?,?)", (ADMIN_USERNAME, password_hash.hash(initial), "admin"))
 
 class Login(BaseModel):
