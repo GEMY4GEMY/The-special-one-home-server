@@ -21,6 +21,16 @@ try {
   if (@($initialVisibility).Count -ne 0) { throw 'Expected empty published exams on fresh database' }
   $student = @{username='standard_test_student';password='StudentPassword123';student_code='ST-TEST-001';full_name='Test Student';grade='Primary 3'} | ConvertTo-Json
   Invoke-RestMethod 'http://127.0.0.1:19000/api/students' -Method Post -ContentType 'application/json' -Body $student -WebSession $admin | Out-Null
+  $publicSignup = @{username='public_signup_student';password='StudentPassword456';full_name='Public Signup Student';grade='Primary 4';role='admin'} | ConvertTo-Json
+  $registered = Invoke-RestMethod 'http://127.0.0.1:19000/api/standard/register' -Method Post -Body $publicSignup -ContentType 'application/json'
+  if ($registered.role -ne 'student' -or -not $registered.student_code) { throw 'Public signup must create student role only' }
+  $publicSession = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+  $publicLogin = @{username='public_signup_student';password='StudentPassword456'} | ConvertTo-Json
+  $publicIdentity = Invoke-RestMethod 'http://127.0.0.1:19000/api/login' -Method Post -Body $publicLogin -ContentType 'application/json' -WebSession $publicSession
+  if ($publicIdentity.role -ne 'student') { throw 'Public student login failed or role escalation detected' }
+  $denied = $false
+  try { Invoke-RestMethod 'http://127.0.0.1:19000/api/students' -WebSession $publicSession | Out-Null } catch { if ([int]$_.Exception.Response.StatusCode -eq 403) { $denied=$true } }
+  if (-not $denied) { throw 'Public student gained admin privileges' }
   $questions = @()
   for ($i=1; $i -le 20; $i++) {
     $questions += @{grade='Primary 3';unit='Unit 1';lesson='Lesson 1';difficulty='easy';kind='choose';prompt="Test question $i";answer='A';options=@('A','B','C')}
