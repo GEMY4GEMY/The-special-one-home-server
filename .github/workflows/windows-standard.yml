@@ -52,6 +52,8 @@ jobs:
           Push-Location dist/TheSpecialOneStandard
           ./runtime/python.exe scripts/make_sample_pdf.py
           if ($LASTEXITCODE -ne 0) { throw 'Sample PDF generation failed' }
+          ./runtime/python.exe -c "import json; from pathlib import Path; from backend.standard_import import validate_bank; p=Path('samples/primary3-example-bank.json'); rows=validate_bank(json.loads(p.read_text(encoding='utf-8'))); assert len(rows)==20; pdf=Path('samples/THE_SPECIAL_ONE_Sample_Questions.pdf'); assert pdf.read_bytes().startswith(b'%PDF-1.4'); print('Sample JSON and PDF verified')"
+          if ($LASTEXITCODE -ne 0) { throw 'Bundled samples validation failed' }
           Pop-Location
       - name: Test complete Standard exam workflow
         shell: pwsh
