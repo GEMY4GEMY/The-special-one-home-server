@@ -27,6 +27,8 @@ def practice_create(payload:PracticeConfig,user=Depends(current_user)):
     student(user)
     if payload.count not in (20,40,60,80,100) or not payload.units or not payload.kinds or any(x not in ("choose","fill","rearrange","letters") for x in payload.kinds):
         raise HTTPException(422,"Invalid practice settings")
+    if len(payload.units)>50 or len(payload.kinds)>4:
+        raise HTTPException(422,"Too many filters")
     with db() as conn:
         init(conn)
         conn.execute("CREATE TABLE IF NOT EXISTS standard_practice (id TEXT PRIMARY KEY,student_id INTEGER,question_ids TEXT)")
