@@ -15,7 +15,7 @@ function setNetwork(online){
 }
 async function api(path, options={}){
   const r=await fetch(path,{credentials:'same-origin',...options});
-  if(!r.ok)throw new Error('Request failed ('+r.status+')');
+  if(!r.ok){let detail='';try{const body=await r.json();detail=typeof body.detail==='string'?body.detail:'';}catch{}throw new Error(detail||'Request failed ('+r.status+')');}
   return r.json();
 }
 function showDashboard(me){
@@ -53,7 +53,7 @@ $('login-form').addEventListener('submit',async e=>{
   try{
     const me=await api('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:$('username').value,password:$('password').value})});
     showDashboard(me);
-  }catch{$('login-error').textContent='Could not sign in. Check your details and connection.';}
+  }catch(error){$('login-error').textContent=error.message==='Invalid credentials'?'Incorrect username or password / اسم المستخدم أو كلمة المرور غير صحيحة':('Sign-in failed / تعذر الدخول: '+error.message);}
   finally{button.disabled=false;}
 });
 $('logout').addEventListener('click',async()=>{
