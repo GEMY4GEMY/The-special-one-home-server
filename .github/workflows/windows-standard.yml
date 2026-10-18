@@ -61,6 +61,13 @@ jobs:
           Push-Location dist/TheSpecialOneStandard
           ./scripts/Test-Standard.ps1
           Pop-Location
+      - name: Verify student registration and report modules in bundled runtime
+        shell: pwsh
+        run: |
+          Push-Location dist/TheSpecialOneStandard
+          ./runtime/python.exe -c "import backend.standard_app; import backend.standard_reports; import openpyxl; import reportlab; import pypdf; print('Registration and reporting modules ready')"
+          if ($LASTEXITCODE -ne 0) { throw 'Bundled registration/report modules failed import validation' }
+          Pop-Location
       - name: Package Standard ZIP
         shell: pwsh
         run: Compress-Archive -Path dist/TheSpecialOneStandard -DestinationPath TheSpecialOne-Standard-Windows-x64.zip
