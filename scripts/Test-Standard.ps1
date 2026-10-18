@@ -80,6 +80,11 @@ try {
   if ($overview.total -ne 2) { throw 'Admin dashboard should show both teacher and practice attempts' }
   $filtered = Invoke-RestMethod 'http://127.0.0.1:19000/api/admin/standard/results?grade=Primary%203' -WebSession $admin
   if ($filtered.total -ne 2 -or $filtered.students -ne 1) { throw 'Admin grade filtering failed' }
+  foreach ($path in @('export.xlsx','export.pdf','print')) {
+    $blocked = $false
+    try { Invoke-WebRequest ('http://127.0.0.1:19000/api/admin/standard/'+$path) -WebSession $studentSession | Out-Null } catch { if ([int]$_.Exception.Response.StatusCode -eq 403) { $blocked = $true } }
+    if (-not $blocked) { throw ('Student was able to access '+$path) }
+  }
   $xlsxPath = Join-Path $env:RUNNER_TEMP 'tso-results-test.xlsx'
   $pdfPath = Join-Path $env:RUNNER_TEMP 'tso-results-test.pdf'
   Invoke-WebRequest 'http://127.0.0.1:19000/api/admin/standard/export.xlsx?grade=Primary%203' -WebSession $admin -OutFile $xlsxPath
