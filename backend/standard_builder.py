@@ -5,6 +5,7 @@ from fastapi import Depends, HTTPException
 from pydantic import BaseModel, Field
 from backend.app import app, db, admin_only, init_question_tables
 from backend.question_selection import choose_questions
+from backend.standard_exams import init as init_standard_exams
 
 KINDS={"choose","fill","rearrange","letters"}
 
@@ -52,6 +53,7 @@ def build_exam(payload:BuildRequest,user=Depends(admin_only)):
 def visibility(user=Depends(admin_only)):
     with db() as conn:
         init_question_tables(conn)
+        init_standard_exams(conn)
         init_visibility(conn)
         return [dict(r) for r in conn.execute("SELECT p.id,d.title,d.grade,COALESCE(v.active,0) AS active FROM standard_publications p JOIN exam_drafts d ON d.id=p.draft_id LEFT JOIN standard_visibility v ON v.publication_id=p.id ORDER BY p.published_at DESC")]
 
@@ -61,6 +63,7 @@ def set_visibility(publication_id:str,state:str,user=Depends(admin_only)):
         raise HTTPException(422,"Use show or hide")
     with db() as conn:
         init_question_tables(conn)
+        init_standard_exams(conn)
         init_visibility(conn)
         row=conn.execute("SELECT p.id,d.grade FROM standard_publications p JOIN exam_drafts d ON d.id=p.draft_id WHERE p.id=?",(publication_id,)).fetchone()
         if not row:
