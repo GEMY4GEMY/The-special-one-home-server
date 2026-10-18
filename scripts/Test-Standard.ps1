@@ -75,6 +75,8 @@ try {
   if ($practiceResult.score -ne 20) { throw 'Custom practice scoring incorrect' }
   $overview = Invoke-RestMethod 'http://127.0.0.1:19000/api/admin/standard/results' -WebSession $admin
   if ($overview.total -ne 2) { throw 'Admin dashboard should show both teacher and practice attempts' }
+  $filtered = Invoke-RestMethod 'http://127.0.0.1:19000/api/admin/standard/results?grade=Primary%203' -WebSession $admin
+  if ($filtered.total -ne 2 -or $filtered.students -ne 1) { throw 'Admin grade filtering failed' }
   Write-Host 'PASS: login, import, publish, activation, student exam, practice, grading, results'
 } finally {
   Stop-Process -Id $server.Id -ErrorAction SilentlyContinue
