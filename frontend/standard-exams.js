@@ -71,7 +71,7 @@ document.addEventListener("DOMContentLoaded",()=>{
         next.onclick=async()=>{if(index<exam.questions.length-1){index++;render();return}
           if(!confirm("Finish exam and submit your answers?"))return;
           next.disabled=true;
-          try{const result=await request((id.startsWith("practice:")?"/api/standard/practice/":"/api/standard/exams/")+encodeURIComponent(id.replace(/^practice:/,""))+"/submit",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({attempt_id:attemptId,answers})});content.textContent="Your result: "+result.score+" / "+result.maximum;}
+          try{const result=await request((id.startsWith("practice:")?"/api/standard/practice/":"/api/standard/exams/")+encodeURIComponent(id.replace(/^practice:/,""))+"/submit",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({attempt_id:attemptId,answers})});content.textContent="Your result: "+result.score+" / "+result.maximum; if(typeof loadResults==="function")loadResults();}
           catch(e){next.disabled=false;alert(e.message)}
         };nav.append(next);content.append(nav);
       };render();
