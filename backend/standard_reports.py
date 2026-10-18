@@ -56,7 +56,7 @@ def export_excel(grade: str | None = Query(default=None,max_length=80), user=Dep
     ws.sheet_properties.pageSetUpPr.fitToPage=True;ws.page_setup.orientation="landscape";ws.page_setup.paperSize=ws.PAPERSIZE_A4
     ws.page_setup.fitToWidth=1;ws.page_setup.fitToHeight=0;ws.print_title_rows="1:5"
     ws.page_margins=PageMargins(left=.25,right=.25,top=.4,bottom=.4,header=.2,footer=.2)
-    ws.oddFooter.center.text="THE SPECIAL ONE • Page &P / &N"
+    ws.oddFooter.center.text="THE SPECIAL ONE - Page &P / &N"
     buf=BytesIO();wb.save(buf);buf.seek(0)
     return StreamingResponse(buf,media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",headers={"Content-Disposition":'attachment; filename="THE_SPECIAL_ONE_Results.xlsx"',"Cache-Control":"no-store"})
 
