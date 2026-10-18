@@ -14,6 +14,7 @@ class Submission(BaseModel):
 def init(conn):
     init_question_tables(conn)
     conn.execute("CREATE TABLE IF NOT EXISTS standard_publications (id TEXT PRIMARY KEY, draft_id TEXT UNIQUE NOT NULL, published_at TEXT NOT NULL)")
+    conn.execute("CREATE TABLE IF NOT EXISTS standard_visibility (publication_id TEXT PRIMARY KEY, active INTEGER NOT NULL DEFAULT 0)")
     conn.execute("CREATE TABLE IF NOT EXISTS standard_attempts (id INTEGER PRIMARY KEY, student_id INTEGER NOT NULL, publication_id TEXT NOT NULL, attempt_id TEXT NOT NULL, score INTEGER NOT NULL, maximum INTEGER NOT NULL, submitted_at TEXT NOT NULL, UNIQUE(student_id,attempt_id))")
 
 def student(user):
@@ -52,11 +53,11 @@ def published_exams(user=Depends(current_user)):
         grade = conn.execute("SELECT grade FROM students WHERE user_id=?", (user["id"],)).fetchone()
         if not grade:
             raise HTTPException(403, "Student profile missing")
-        rows = conn.execute("SELECT p.id,d.title,d.grade,d.question_ids FROM standard_publications p JOIN exam_drafts d ON d.id=p.draft_id WHERE d.grade=? ORDER BY p.published_at DESC", (grade["grade"],)).fetchall()
+        rows = conn.execute("SELECT p.id,d.title,d.grade,d.question_ids FROM standard_publications p JOIN exam_drafts d ON d.id=p.draft_id JOIN standard_visibility v ON v.publication_id=p.id AND v.active=1 WHERE d.grade=? ORDER BY p.published_at DESC", (grade["grade"],)).fetchall()
         return [{"id":r["id"],"title":r["title"],"question_count":len(json.loads(r["question_ids"]))} for r in rows]
 
 def load_exam(conn, exam_id, user):
-    row = conn.execute("SELECT d.title,d.grade,d.question_ids FROM standard_publications p JOIN exam_drafts d ON d.id=p.draft_id WHERE p.id=?", (exam_id,)).fetchone()
+    row = conn.execute("SELECT d.title,d.grade,d.question_ids FROM standard_publications p JOIN exam_drafts d ON d.id=p.draft_id JOIN standard_visibility v ON v.publication_id=p.id AND v.active=1 WHERE p.id=?", (exam_id,)).fetchone()
     grade = conn.execute("SELECT grade FROM students WHERE user_id=?", (user["id"],)).fetchone()
     if not row or not grade or grade["grade"] != row["grade"]:
         raise HTTPException(404, "Exam not available")
