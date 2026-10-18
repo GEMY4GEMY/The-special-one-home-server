@@ -90,6 +90,9 @@ try {
   if ($overview.total -ne 2) { throw 'Admin dashboard should show both teacher and practice attempts' }
   $filtered = Invoke-RestMethod 'http://127.0.0.1:19000/api/admin/standard/results?grade=Primary%203' -WebSession $admin
   if ($filtered.total -ne 2 -or $filtered.students -ne 1) { throw 'Admin grade filtering failed' }
+  if ($filtered.teacher_attempts -ne 1 -or $filtered.practice_attempts -ne 1) { throw 'Filtered teacher/practice counters incorrect' }
+  $emptyGrade = Invoke-RestMethod 'http://127.0.0.1:19000/api/admin/standard/results?grade=Primary%204' -WebSession $admin
+  if ($emptyGrade.total -ne 0 -or $emptyGrade.teacher_attempts -ne 0 -or $emptyGrade.practice_attempts -ne 0) { throw 'Other grade results leaked into filtered counters' }
   foreach ($path in @('export.xlsx','export.pdf','print')) {
     $blocked = $false
     try { Invoke-WebRequest ('http://127.0.0.1:19000/api/admin/standard/'+$path) -WebSession $studentSession | Out-Null } catch { if ([int]$_.Exception.Response.StatusCode -eq 403) { $blocked = $true } }
