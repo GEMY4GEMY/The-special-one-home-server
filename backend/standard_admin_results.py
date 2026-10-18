@@ -29,4 +29,4 @@ def admin_standard_results(grade: str | None = Query(default=None, max_length=80
             rows=[r for r in rows if r["grade"]==grade]
         rows.sort(key=lambda x:x["submitted_at"],reverse=True)
         students=len({r["username"] for r in rows})
-        return {"total":len(rows),"students":students,"teacher_attempts":len(teacher),"practice_attempts":len(practice),"results":rows[:limit]}
+        return {"total":len(rows),"students":students,"teacher_attempts":sum(x["exam_type"]=="teacher" for x in rows),"practice_attempts":sum(x["exam_type"]=="practice" for x in rows),"results":rows[:limit]}
