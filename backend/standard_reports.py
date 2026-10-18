@@ -32,6 +32,12 @@ def export_excel(grade: str | None = Query(default=None,max_length=80), user=Dep
     ws["A1"].alignment=Alignment(vertical="center",horizontal="center")
     ws.merge_cells("A3:H3");ws["A3"]=f"Grade: {grade or 'All'}    |    Students: {data['students']}    |    Teacher: {data['teacher_attempts']}    |    Practice: {data['practice_attempts']}    |    Total: {data['total']}"
     ws["A3"].font=Font(name="Calibri",bold=True,color="24476C")
+    ws.merge_cells("A4:H4")
+    earned=sum(int(x["score"]) for x in data["results"])
+    possible=sum(int(x["maximum"]) for x in data["results"])
+    average=round(100*earned/possible,1) if possible else 0
+    ws["A4"]=f"Combined scores: {earned} / {possible}     |     Weighted average: {average}%"
+    ws["A4"].font=Font(name="Calibri",bold=True,color="16765D")
     for i,title in enumerate(HEADERS,1):
         cell=ws.cell(5,i,title);cell.font=Font(name="Calibri",bold=True,color="FFFFFF")
         cell.fill=PatternFill("solid",fgColor="2563A0");cell.alignment=Alignment(horizontal="center",vertical="center",wrap_text=True)
