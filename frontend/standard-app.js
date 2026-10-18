@@ -25,7 +25,7 @@ function showDashboard(me){
   $('welcome-subtitle').textContent=me.role==='student'?'Your results are private and ready to explore.':'Your administration workspace.';
   $('student-area').classList.toggle('hidden',me.role!=='student');
   $('admin-area').classList.toggle('hidden',me.role!=='admin');
-  if(me.role==='student'){loadResults();document.dispatchEvent(new Event('tso:student-login'));}
+  if(me.role==='student'){loadResults();document.dispatchEvent(new Event('tso:student-login'));}else if(me.role==='admin'){document.dispatchEvent(new Event('tso:admin-login'));}
 }
 async function loadResults(){
   const area=$('results');
