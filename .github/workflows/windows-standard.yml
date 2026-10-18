@@ -5,7 +5,7 @@ on:
     branches: [main]
     paths:
       - 'samples/**'
-      - 'scripts/Test-Standard.ps1'
+      - 'scripts/**'
       - 'backend/**'
       - 'frontend/**'
       - 'scripts/Start-Standard.ps1'
