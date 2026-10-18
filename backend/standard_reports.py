@@ -12,7 +12,7 @@ FIELDS = ("full_name","username","grade","exam_title","exam_type","score","maxim
 HEADERS = ("Student / الطالب","Username","Grade / الصف","Exam / الامتحان","Type","Score","Max","Date / التاريخ")
 
 def data_for(grade, user):
-    return admin_standard_results(grade=grade,user=user)
+    return admin_standard_results(grade=grade,limit=50000,user=user)
 
 def excel_safe(value):
     value=str(value if value is not None else "")
