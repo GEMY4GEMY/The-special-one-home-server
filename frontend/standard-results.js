@@ -12,7 +12,7 @@ document.addEventListener("DOMContentLoaded",()=>{
       const data=await response.json();
       if(!response.ok)throw Error(data.detail||"Cannot load results");
       latest=data.results;
-      summary.textContent="Total completed attempts: "+data.total+" (latest 500 shown)";
+      summary.textContent="Students: "+data.students+" | Teacher exams: "+data.teacher_attempts+" | Custom practice: "+data.practice_attempts+" | Total: "+data.total+" (latest 500 shown)";
       list.replaceChildren();
       if(!data.results.length){list.textContent="No results yet.";return}
       for(const item of data.results){
