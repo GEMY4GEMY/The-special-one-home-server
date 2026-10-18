@@ -25,7 +25,7 @@ def practice_filters(user=Depends(current_user)):
 @app.post("/api/standard/practice-create")
 def practice_create(payload:PracticeConfig,user=Depends(current_user)):
     student(user)
-    if not 1<=payload.count<=100 or not payload.units or not payload.kinds or any(x not in ("choose","fill","rearrange","letters") for x in payload.kinds):
+    if payload.count not in (20,40,60,80,100) or not payload.units or not payload.kinds or any(x not in ("choose","fill","rearrange","letters") for x in payload.kinds):
         raise HTTPException(422,"Invalid practice settings")
     with db() as conn:
         init(conn)
