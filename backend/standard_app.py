@@ -52,3 +52,5 @@ import backend.standard_exams
 @app.get("/api/standard/health")
 def standard_health():
     return {"status":"ok","edition":"standard","port":200}
+
+import backend.standard_builder
