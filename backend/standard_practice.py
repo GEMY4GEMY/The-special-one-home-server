@@ -49,6 +49,7 @@ class PracticeSubmission(BaseModel):
     answers: dict[str,str]
 
 def get_private_questions(conn, practice_id, user):
+    conn.execute("CREATE TABLE IF NOT EXISTS standard_practice (id TEXT PRIMARY KEY,student_id INTEGER,question_ids TEXT)")
     row=conn.execute("SELECT question_ids FROM standard_practice WHERE id=? AND student_id=?",(practice_id,user["id"])).fetchone()
     if not row: raise HTTPException(404,"Practice not found")
     ids=json.loads(row["question_ids"])
