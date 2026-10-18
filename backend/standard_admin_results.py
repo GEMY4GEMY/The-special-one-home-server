@@ -26,4 +26,5 @@ def admin_standard_results(user=Depends(admin_only)):
         """).fetchall()
         rows=[dict(r) for r in teacher]+[dict(r) for r in practice]
         rows.sort(key=lambda x:x["submitted_at"],reverse=True)
-        return {"total":len(rows),"results":rows[:500]}
+        students=len({r["username"] for r in rows})
+        return {"total":len(rows),"students":students,"teacher_attempts":len(teacher),"practice_attempts":len(practice),"results":rows[:500]}
