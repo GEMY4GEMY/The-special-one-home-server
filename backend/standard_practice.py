@@ -41,3 +41,52 @@ def practice_create(payload:PracticeConfig,user=Depends(current_user)):
         pid=secrets.token_urlsafe(18)
         conn.execute("INSERT INTO standard_practice VALUES (?,?,?)",(pid,user["id"],json.dumps(ids)))
         return {"id":pid,"question_count":len(ids)}
+
+class PracticeSubmission(BaseModel):
+    attempt_id: str
+    answers: dict[str,str]
+
+def get_private_questions(conn, practice_id, user):
+    row=conn.execute("SELECT question_ids FROM standard_practice WHERE id=? AND student_id=?",(practice_id,user["id"])).fetchone()
+    if not row: raise HTTPException(404,"Practice not found")
+    ids=json.loads(row["question_ids"])
+    questions=conn.execute("SELECT * FROM question_bank WHERE id IN ("+",".join("?" for _ in ids)+")",ids).fetchall()
+    by_id={str(q["id"]):q for q in questions}
+    if len(by_id)!=len(ids): raise HTTPException(409,"Questions unavailable")
+    return [by_id[str(i)] for i in ids]
+
+@app.get("/api/standard/practice/{practice_id}")
+def get_practice(practice_id:str,user=Depends(current_user)):
+    student(user)
+    with db() as conn:
+        init(conn)
+        questions=get_private_questions(conn,practice_id,user)
+        return {"id":practice_id,"title":"Custom practice","questions":[{"id":str(q["id"]),"type":q["kind"],"prompt":q["prompt"],"options":json.loads(q["options"] or "[]")} for q in questions]}
+
+@app.post("/api/standard/practice/{practice_id}/submit")
+def submit_practice(practice_id:str,payload:PracticeSubmission,user=Depends(current_user)):
+    student(user)
+    if not 8<=len(payload.attempt_id)<=100: raise HTTPException(422,"Invalid attempt ID")
+    with db() as conn:
+        init(conn)
+        conn.execute("CREATE TABLE IF NOT EXISTS standard_practice_results (id INTEGER PRIMARY KEY,student_id INTEGER,practice_id TEXT,attempt_id TEXT,score INTEGER,maximum INTEGER,submitted_at TEXT,UNIQUE(student_id,attempt_id))")
+        questions=get_private_questions(conn,practice_id,user)
+        valid_ids={str(q["id"]) for q in questions}
+        if not set(payload.answers).issubset(valid_ids): raise HTTPException(422,"Unknown question ID")
+        if any(not isinstance(v,str) or len(v)>500 for v in payload.answers.values()): raise HTTPException(422,"Invalid answer")
+        previous=conn.execute("SELECT practice_id,score,maximum FROM standard_practice_results WHERE student_id=? AND attempt_id=?",(user["id"],payload.attempt_id)).fetchone()
+        if previous:
+            if previous["practice_id"]!=practice_id: raise HTTPException(409,"Attempt ID already used")
+            return {"score":previous["score"],"maximum":previous["maximum"],"already_submitted":True}
+        score=sum(normalize(payload.answers.get(str(q["id"]),""))==normalize(q["answer"]) for q in questions)
+        from datetime import datetime,timezone
+        conn.execute("INSERT INTO standard_practice_results(student_id,practice_id,attempt_id,score,maximum,submitted_at) VALUES (?,?,?,?,?,?)",(user["id"],practice_id,payload.attempt_id,score,len(questions),datetime.now(timezone.utc).isoformat()))
+        return {"score":score,"maximum":len(questions),"already_submitted":False}
+
+@app.get("/api/standard/practice-results")
+def practice_results(user=Depends(current_user)):
+    student(user)
+    with db() as conn:
+        init(conn)
+        conn.execute("CREATE TABLE IF NOT EXISTS standard_practice_results (id INTEGER PRIMARY KEY,student_id INTEGER,practice_id TEXT,attempt_id TEXT,score INTEGER,maximum INTEGER,submitted_at TEXT,UNIQUE(student_id,attempt_id))")
+        return [dict(r) for r in conn.execute("SELECT practice_id,score,maximum,submitted_at FROM standard_practice_results WHERE student_id=? ORDER BY id DESC",(user["id"],))]
