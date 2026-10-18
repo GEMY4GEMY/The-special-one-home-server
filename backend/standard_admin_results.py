@@ -1,10 +1,10 @@
 """Administrator overview of graded teacher exams and private practice."""
-from fastapi import Depends
+from fastapi import Depends, Query
 from backend.app import app, db, admin_only
 from backend.standard_exams import init
 
 @app.get("/api/admin/standard/results")
-def admin_standard_results(user=Depends(admin_only)):
+def admin_standard_results(grade: str | None = Query(default=None, max_length=80), user=Depends(admin_only)):
     with db() as conn:
         init(conn)
         conn.execute("CREATE TABLE IF NOT EXISTS standard_practice_results (id INTEGER PRIMARY KEY,student_id INTEGER,practice_id TEXT,attempt_id TEXT,score INTEGER,maximum INTEGER,submitted_at TEXT,UNIQUE(student_id,attempt_id))")
@@ -25,6 +25,8 @@ def admin_standard_results(user=Depends(admin_only)):
             JOIN students s ON s.user_id=u.id
         """).fetchall()
         rows=[dict(r) for r in teacher]+[dict(r) for r in practice]
+        if grade:
+            rows=[r for r in rows if r["grade"]==grade]
         rows.sort(key=lambda x:x["submitted_at"],reverse=True)
         students=len({r["username"] for r in rows})
         return {"total":len(rows),"students":students,"teacher_attempts":len(teacher),"practice_attempts":len(practice),"results":rows[:500]}
