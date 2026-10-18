@@ -94,7 +94,7 @@ def export_pdf(grade: str | None = Query(default=None,max_length=80), user=Depen
     story.append(Paragraph(f"Combined score: {total_points} / {maximum_points}  |  Weighted average: {percentage}%",normal))
     story.append(Spacer(1,12))
     columns=("Student","Grade","Exam","Type","Score","Max","Date")
-    widths=(150,85,185,65,42,42,160)
+    widths=(145,85,180,65,42,42,160)
     cells=[[Paragraph(escape(x),normal) for x in columns]]
     for item in data["results"]:
         values=(item["full_name"],item["grade"],item["exam_title"],item["exam_type"],item["score"],item["maximum"],item["submitted_at"][:16].replace("T"," "))
