@@ -70,8 +70,9 @@ try {
   $history = Invoke-RestMethod 'http://127.0.0.1:19000/api/standard/my-attempts' -WebSession $studentSession
   if (@($history).Count -ne 1) { throw 'Student result not persisted' }
   Invoke-RestMethod ('http://127.0.0.1:19000/api/admin/standard/visibility/'+$published.id+'/hide') -Method Post -WebSession $admin | Out-Null
-  $hidden = @(Invoke-RestMethod 'http://127.0.0.1:19000/api/standard/exams' -WebSession $studentSession)
-  if ($hidden.Count -ne 0) { throw 'Hidden teacher exam was still listed' }
+  $hiddenResponse = Invoke-WebRequest 'http://127.0.0.1:19000/api/standard/exams' -WebSession $studentSession
+  $hidden = ConvertFrom-Json -InputObject $hiddenResponse.Content -NoEnumerate
+  if ($hidden -isnot [array] -or $hidden.Count -ne 0) { throw 'Hidden teacher exam was still listed' }
   Invoke-RestMethod ('http://127.0.0.1:19000/api/admin/standard/visibility/'+$published.id+'/show') -Method Post -WebSession $admin | Out-Null
   $builderBody = @{title='Filtered Unit Exam';grade='Primary 3';units=@('Unit 1');kinds=@('choose');count=20} | ConvertTo-Json
   $filteredDraft = Invoke-RestMethod 'http://127.0.0.1:19000/api/admin/standard/build' -Method Post -ContentType 'application/json' -Body $builderBody -WebSession $admin
