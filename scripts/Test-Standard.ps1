@@ -47,6 +47,11 @@ try {
   if ($result.score -ne 20) { throw 'Exam scoring failed' }
   $history = Invoke-RestMethod 'http://127.0.0.1:19000/api/standard/my-attempts' -WebSession $studentSession
   if (@($history).Count -ne 1) { throw 'Student result not persisted' }
+  $builderBody = @{title='Filtered Unit Exam';grade='Primary 3';units=@('Unit 1');kinds=@('choose');count=20} | ConvertTo-Json
+  $filteredDraft = Invoke-RestMethod 'http://127.0.0.1:19000/api/admin/standard/build' -Method Post -ContentType 'application/json' -Body $builderBody -WebSession $admin
+  if ($filteredDraft.question_count -ne 20) { throw 'Filtered exam builder failed' }
+  $studentFilters = Invoke-RestMethod 'http://127.0.0.1:19000/api/standard/practice-filters' -WebSession $studentSession
+  if ($studentFilters.grade -ne 'Primary 3') { throw 'Student grade filter failed' }
   $practiceBody = @{units=@('Unit 1');kinds=@('choose');count=20} | ConvertTo-Json
   $practice = Invoke-RestMethod 'http://127.0.0.1:19000/api/standard/practice-create' -Method Post -ContentType 'application/json' -Body $practiceBody -WebSession $studentSession
   $practiceExam = Invoke-RestMethod ('http://127.0.0.1:19000/api/standard/practice/'+$practice.id) -WebSession $studentSession
