@@ -29,7 +29,7 @@ document.addEventListener("DOMContentLoaded",()=>{
   panel.querySelector("#std-results-export").onclick=()=>{
     if(!latest.length){summary.textContent="No results to export.";return}
     const columns=["full_name","username","grade","exam_title","exam_type","score","maximum","submitted_at"];
-    const escape=value=>'"'+String(value??"").replaceAll('"','""')+'"';
+    const escape=value=>{const raw=String(value??"");const safe=/^[=+@\-\t\r]/.test(raw)?"\u0027"+raw:raw;return '"'+safe.replaceAll('"','""')+'"'};
     const csv="\uFEFF"+[columns.join(","),...latest.map(item=>columns.map(key=>escape(item[key])).join(","))].join("\r\n");
     const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
     const link=document.createElement("a");link.href=url;link.download="THE_SPECIAL_ONE_Student_Results.csv";link.click();URL.revokeObjectURL(url);
