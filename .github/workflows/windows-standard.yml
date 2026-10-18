@@ -22,6 +22,15 @@ jobs:
         with:
           python-version: '3.11'
           architecture: x64
+      - name: Validate Python and browser JavaScript syntax
+        shell: pwsh
+        run: |
+          python -m compileall -q backend scripts
+          if ($LASTEXITCODE -ne 0) { throw 'Python syntax validation failed' }
+          Get-ChildItem frontend -Filter *.js | ForEach-Object {
+            node --check $_.FullName
+            if ($LASTEXITCODE -ne 0) { throw "JavaScript syntax validation failed: $($_.Name)" }
+          }
       - name: Bundle Python and dependencies without AI
         shell: pwsh
         run: |
