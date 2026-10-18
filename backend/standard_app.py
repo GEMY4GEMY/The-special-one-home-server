@@ -56,3 +56,5 @@ def standard_health():
 import backend.standard_builder
 
 import backend.standard_practice
+
+import backend.standard_admin_results
