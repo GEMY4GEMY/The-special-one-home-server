@@ -28,6 +28,7 @@ document.addEventListener("DOMContentLoaded",()=>{
     }catch(e){summary.textContent=e.message}
   }
   panel.querySelector("#std-results-refresh").onclick=refresh;
+  panel.querySelector("#std-results-grade").addEventListener("change",refresh);
   panel.querySelector("#std-results-export").onclick=()=>{
     if(!latest.length){summary.textContent="No results to export.";return}
     const columns=["full_name","username","grade","exam_title","exam_type","score","maximum","submitted_at"];
