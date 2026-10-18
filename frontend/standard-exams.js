@@ -28,10 +28,36 @@ document.addEventListener("DOMContentLoaded",()=>{
       for(const exam of exams){const b=document.createElement("button");b.className="outline";b.textContent=exam.title+" ("+exam.question_count+" questions)";b.onclick=()=>start(exam.id);content.append(b)}
     }catch(e){content.textContent=e.message}
   };
+  const practice=document.createElement("section");practice.className="panel";
+  practice.innerHTML='<h3>Custom Practice / تدريب حسب اختيارك</h3><p>Choose units and question types from your own grade.</p><div id="std-practice-filters"></div><label>Questions <select id="std-practice-count"><option>5</option><option>10</option><option selected>20</option><option>40</option><option>60</option><option>80</option><option>100</option></select></label><button class="primary" id="std-practice-start">Start custom practice</button><p id="std-practice-status" role="status"></p>';
+  area.prepend(practice);
+  const filterBox=practice.querySelector("#std-practice-filters"),practiceStatus=practice.querySelector("#std-practice-status");
+  const selected=key=>[...filterBox.querySelectorAll('input[data-group="'+key+'"]:checked')].map(el=>el.value);
+  async function loadPracticeFilters(){
+    try{
+      const data=await request("/api/standard/practice-filters");filterBox.replaceChildren();
+      const title=document.createElement("p");title.textContent="Your grade: "+data.grade;filterBox.append(title);
+      for(const [group,key] of [["unit","unit"],["kind","kind"]]){
+        const section=document.createElement("div");const heading=document.createElement("strong");heading.textContent=group==="unit"?"Units: ":"Question types: ";section.append(heading);
+        for(const value of [...new Set(data.filters.map(x=>x[key]))]){
+          const label=document.createElement("label");label.style.margin="8px";const cb=document.createElement("input");cb.type="checkbox";cb.dataset.group=group;cb.value=value;label.append(cb,document.createTextNode(" "+value));section.append(label)
+        }filterBox.append(section)
+      }
+    }catch(e){practiceStatus.textContent=e.message}
+  }
+  practice.querySelector("#std-practice-start").onclick=async()=>{
+    const units=selected("unit"),kinds=selected("kind"),count=Number(practice.querySelector("#std-practice-count").value);
+    if(!units.length||!kinds.length){practiceStatus.textContent="Select units and question types first.";return}
+    try{
+      const result=await request("/api/standard/practice-create",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({units,kinds,count})});
+      await start("practice:"+result.id);
+    }catch(e){practiceStatus.textContent=e.message}
+  };
+  loadPracticeFilters();
   async function start(id){
     content.replaceChildren();
     try{
-      const exam=await request("/api/standard/exams/"+encodeURIComponent(id));
+      const exam=await request((id.startsWith("practice:")?"/api/standard/practice/":"/api/standard/exams/")+encodeURIComponent(id.replace(/^practice:/,"")));
       const answers={};let index=0;const attemptId=(crypto.randomUUID?crypto.randomUUID():String(Date.now())+"-attempt");
       const render=()=>{
         content.replaceChildren();
@@ -44,7 +70,7 @@ document.addEventListener("DOMContentLoaded",()=>{
         next.onclick=async()=>{if(index<exam.questions.length-1){index++;render();return}
           if(!confirm("Finish exam and submit your answers?"))return;
           next.disabled=true;
-          try{const result=await request("/api/standard/exams/"+encodeURIComponent(id)+"/submit",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({attempt_id:attemptId,answers})});content.textContent="Your result: "+result.score+" / "+result.maximum;}
+          try{const result=await request((id.startsWith("practice:")?"/api/standard/practice/":"/api/standard/exams/")+encodeURIComponent(id.replace(/^practice:/,""))+"/submit",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({attempt_id:attemptId,answers})});content.textContent="Your result: "+result.score+" / "+result.maximum;}
           catch(e){next.disabled=false;alert(e.message)}
         };nav.append(next);content.append(nav);
       };render();
