@@ -25,7 +25,7 @@ def admin_standard_results(grade: str | None = Query(default=None, max_length=80
             JOIN students s ON s.user_id=u.id
         """).fetchall()
         rows=[dict(r) for r in teacher]+[dict(r) for r in practice]
-        if grade:
+        if grade is not None:
             rows=[r for r in rows if r["grade"]==grade]
         rows.sort(key=lambda x:x["submitted_at"],reverse=True)
         students=len({r["username"] for r in rows})
