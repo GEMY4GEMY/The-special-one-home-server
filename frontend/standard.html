@@ -24,6 +24,16 @@
   <label for="password">Password</label><input id="password" name="password" type="password" autocomplete="current-password" required placeholder="Your password">
   <button class="primary" type="submit">Sign in <span aria-hidden="true">→</span></button>
  </form><p id="login-error" class="error" role="alert"></p>
+ <button type="button" class="outline" id="open-register" aria-expanded="false" aria-controls="register-panel">Create student account / إنشاء حساب طالب</button>
+ <section id="register-panel" class="hidden" aria-label="Student registration">
+ <h3>New student / طالب جديد</h3><p class="muted">Student accounts have learning access only. Administrator permissions are separate.</p>
+ <form id="register-form">
+ <label for="reg-full-name">Full name / الاسم</label><input id="reg-full-name" name="full_name" required minlength="3" maxlength="120" autocomplete="name">
+ <label for="reg-username">Username / اسم المستخدم</label><input id="reg-username" name="username" required minlength="3" maxlength="80" pattern="[A-Za-z0-9_.-]+" autocomplete="username">
+ <label for="reg-grade">Grade / الصف</label><select id="reg-grade" name="grade" required><option value="">Select grade / اختر الصف</option><option>Primary 1</option><option>Primary 2</option><option>Primary 3</option><option>Primary 4</option><option>Primary 5</option><option>Primary 6</option><option>Preparatory 1</option><option>Preparatory 2</option><option>Preparatory 3</option><option>Secondary 1</option><option>Secondary 2</option><option>Secondary 3</option></select>
+ <label for="reg-password">Password / كلمة المرور</label><input id="reg-password" name="password" type="password" required minlength="10" maxlength="128" autocomplete="new-password">
+ <button class="primary" type="submit">Create account / إنشاء الحساب</button>
+ </form><p id="register-status" role="status"></p></section>
 </section>
 <section class="dashboard hidden" id="dashboard" aria-live="polite">
  <div class="welcome"><div><span class="eyebrow">YOUR LEARNING SPACE</span><h2 id="welcome-title">Welcome!</h2><p id="welcome-subtitle">Here is your progress.</p></div><button class="outline" id="logout" type="button">Log out</button></div>
@@ -62,6 +72,7 @@
 <footer>THE SPECIAL ONE · Private local learning portal · Mr. Sameh Abdel Hafeez</footer>
 </div>
 <script src="/static/standard-app.js" defer></script>
+<script src="/static/standard-register.js" defer></script>
 <script src="/static/admin.js" defer></script>
 <script src="/static/standard-import.js" defer></script>
 <script src="/static/standard-exams.js" defer></script>
