@@ -23,6 +23,7 @@ document.addEventListener("DOMContentLoaded",()=>{
   const load=document.createElement("button");load.className="primary";load.textContent="Load my exams";
   const content=document.createElement("div");panel.append(heading,load,content);area.prepend(panel);
   document.addEventListener("tso:student-login",()=>load.click());
+  if(!area.classList.contains('hidden'))queueMicrotask(()=>load.click());
   load.onclick=async()=>{
     content.replaceChildren();
     try{const exams=await request("/api/standard/exams");if(!exams.length){content.textContent="No published exams for your grade yet.";return}
@@ -54,7 +55,8 @@ document.addEventListener("DOMContentLoaded",()=>{
       await start("practice:"+result.id);
     }catch(e){practiceStatus.textContent=e.message}
   };
-  loadPracticeFilters();
+  document.addEventListener('tso:student-login',loadPracticeFilters);
+  if(!document.getElementById('student-area').classList.contains('hidden'))loadPracticeFilters();
   async function start(id){
     content.replaceChildren();
     try{
