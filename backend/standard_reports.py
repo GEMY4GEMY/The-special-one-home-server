@@ -103,7 +103,7 @@ def export_pdf(grade: str | None = Query(default=None,max_length=80), user=Depen
     table.setStyle(TableStyle([("BACKGROUND",(0,0),(-1,0),colors.HexColor("#DCEAF5")),("ROWBACKGROUNDS",(0,1),(-1,-1),[colors.white,colors.HexColor("#F3F7FB")]),("VALIGN",(0,0),(-1,-1),"MIDDLE"),("BOTTOMPADDING",(0,0),(-1,-1),7),("TOPPADDING",(0,0),(-1,-1),7),("LINEBELOW",(0,0),(-1,0),.8,colors.HexColor("#24476C"))]))
     story.append(table)
     def footer(canvas,document):
-        canvas.saveState();canvas.setFont(font,8);canvas.drawString(26,15,"THE SPECIAL ONE • OFFLINE STUDENT MANAGEMENT");canvas.drawRightString(landscape(A4)[0]-26,15,f"Page {document.page}");canvas.restoreState()
+        canvas.saveState();canvas.setFont(font,8);canvas.drawString(26,15,"THE SPECIAL ONE - OFFLINE STUDENT MANAGEMENT");canvas.drawRightString(landscape(A4)[0]-26,15,f"Page {document.page}");canvas.restoreState()
     doc.build(story,onFirstPage=footer,onLaterPages=footer);buf.seek(0)
     return StreamingResponse(buf,media_type="application/pdf",headers={"Content-Disposition":'attachment; filename="THE_SPECIAL_ONE_Results.pdf"',"Cache-Control":"no-store"})
 
