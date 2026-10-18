@@ -37,6 +37,13 @@ try {
   $studentSession = New-Object Microsoft.PowerShell.Commands.WebRequestSession
   $studentLogin = @{username='standard_test_student';password='StudentPassword123'} | ConvertTo-Json
   Invoke-RestMethod 'http://127.0.0.1:19000/api/login' -Method Post -Body $studentLogin -ContentType 'application/json' -WebSession $studentSession | Out-Null
+  $studentDeniedAdmin = $false
+  try {
+    Invoke-RestMethod 'http://127.0.0.1:19000/api/admin/standard/visibility' -WebSession $studentSession | Out-Null
+  } catch {
+    if ([int]$_.Exception.Response.StatusCode -eq 403) { $studentDeniedAdmin = $true }
+  }
+  if (-not $studentDeniedAdmin) { throw 'Student was not blocked from admin exam controls' }
   $exams = Invoke-RestMethod 'http://127.0.0.1:19000/api/standard/exams' -WebSession $studentSession
   if (@($exams).Count -ne 1) { throw 'Published exam not visible to student' }
   $exam = Invoke-RestMethod ("http://127.0.0.1:19000/api/standard/exams/"+$published.id) -WebSession $studentSession
