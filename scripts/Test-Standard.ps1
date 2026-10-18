@@ -47,7 +47,15 @@ try {
   if ($result.score -ne 20) { throw 'Exam scoring failed' }
   $history = Invoke-RestMethod 'http://127.0.0.1:19000/api/standard/my-attempts' -WebSession $studentSession
   if (@($history).Count -ne 1) { throw 'Student result not persisted' }
-  Write-Host 'PASS: Standard login, import, publish, student access, grading, results'
+  $practiceBody = @{units=@('Unit 1');kinds=@('choose');count=20} | ConvertTo-Json
+  $practice = Invoke-RestMethod 'http://127.0.0.1:19000/api/standard/practice-create' -Method Post -ContentType 'application/json' -Body $practiceBody -WebSession $studentSession
+  $practiceExam = Invoke-RestMethod ('http://127.0.0.1:19000/api/standard/practice/'+$practice.id) -WebSession $studentSession
+  if ($practiceExam.questions.Count -ne 20) { throw 'Custom practice question count incorrect' }
+  if ($practiceExam.questions[0].PSObject.Properties.Name -contains 'answer') { throw 'Practice answer leaked' }
+  $practiceSubmission = @{attempt_id='practice-test-attempt-0001';answers=$answers} | ConvertTo-Json -Depth 6
+  $practiceResult = Invoke-RestMethod ('http://127.0.0.1:19000/api/standard/practice/'+$practice.id+'/submit') -Method Post -ContentType 'application/json' -Body $practiceSubmission -WebSession $studentSession
+  if ($practiceResult.score -ne 20) { throw 'Custom practice scoring incorrect' }
+  Write-Host 'PASS: login, import, publish, activation, student exam, practice, grading, results'
 } finally {
   Stop-Process -Id $server.Id -ErrorAction SilentlyContinue
   Remove-Item Env:TSO_ADMIN_INITIAL_PASSWORD -ErrorAction SilentlyContinue
