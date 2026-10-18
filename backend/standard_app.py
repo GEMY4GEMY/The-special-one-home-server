@@ -54,3 +54,5 @@ def standard_health():
     return {"status":"ok","edition":"standard","port":200}
 
 import backend.standard_builder
+
+import backend.standard_practice
