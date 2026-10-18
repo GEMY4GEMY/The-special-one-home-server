@@ -93,6 +93,8 @@ try {
   $pdfBytes = [System.IO.File]::ReadAllBytes($pdfPath)
   if ($xlsxBytes.Length -lt 1000 -or $xlsxBytes[0] -ne 80 -or $xlsxBytes[1] -ne 75) { throw 'Excel report is not a valid XLSX archive' }
   if ($pdfBytes.Length -lt 1000 -or [System.Text.Encoding]::ASCII.GetString($pdfBytes,0,4) -ne '%PDF') { throw 'PDF report is not valid' }
+  & ./runtime/python.exe -c 'from openpyxl import load_workbook; from pypdf import PdfReader; import os; from pathlib import Path; d=Path(os.environ["RUNNER_TEMP"]); w=load_workbook(d/"tso-results-test.xlsx",read_only=True); assert w.active.max_row>=7; p=PdfReader(str(d/"tso-results-test.pdf")); assert len(p.pages)>0; print("PDF and Excel parsed successfully")'
+  if ($LASTEXITCODE -ne 0) { throw 'Report document parsing failed' }
   $printPage = Invoke-WebRequest 'http://127.0.0.1:19000/api/admin/standard/print?grade=Primary%203' -WebSession $admin
   if ($printPage.Content -notmatch 'THE SPECIAL ONE') { throw 'Print view failed' }
   Write-Host 'PASS: login, import, publish, activation, student exam, practice, grading, results'
