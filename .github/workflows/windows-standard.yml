@@ -37,6 +37,13 @@ jobs:
           ./runtime/python.exe -c "from backend.standard_app import app; print(app.title)"
           if ($LASTEXITCODE -ne 0) { throw 'Embedded runtime failed' }
           Pop-Location
+      - name: Generate bundled PDF curriculum example
+        shell: pwsh
+        run: |
+          Push-Location dist/TheSpecialOneStandard
+          ./runtime/python.exe scripts/make_sample_pdf.py
+          if ($LASTEXITCODE -ne 0) { throw 'Sample PDF generation failed' }
+          Pop-Location
       - name: Test complete Standard exam workflow
         shell: pwsh
         run: |
