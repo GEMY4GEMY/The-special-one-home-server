@@ -82,6 +82,10 @@ def export_pdf(grade: str | None = Query(default=None,max_length=80), user=Depen
     normal=ParagraphStyle("cell",fontName=font,fontSize=8,leading=11)
     story=[Paragraph("THE SPECIAL ONE | STUDENT RESULTS",title),Spacer(1,10)]
     story.append(Paragraph(escape(f"Grade: {grade or 'All'}  |  Students: {data['students']}  |  Teacher: {data['teacher_attempts']}  |  Practice: {data['practice_attempts']}  |  Total: {data['total']}"),normal))
+    total_points=sum(int(x["score"]) for x in data["results"])
+    maximum_points=sum(int(x["maximum"]) for x in data["results"])
+    percentage=round(100*total_points/maximum_points,1) if maximum_points else 0
+    story.append(Paragraph(f"Combined score: {total_points} / {maximum_points}  |  Weighted average: {percentage}%",normal))
     story.append(Spacer(1,12))
     columns=("Student","Grade","Exam","Type","Score","Max","Date")
     widths=(150,85,185,65,42,42,160)
