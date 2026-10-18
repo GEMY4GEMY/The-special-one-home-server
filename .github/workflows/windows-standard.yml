@@ -81,8 +81,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $tag = "standard-v0.1.0-build-${{ github.run_number }}"
-          gh release create $tag TheSpecialOne-Standard-Windows-x64.zip --title "THE SPECIAL ONE Standard $tag" --notes "Offline Windows x64 Standard edition. Port 200. No AI model required. Extract ZIP and run START_STANDARD_WINDOWS.bat." --target "${{ github.sha }}" --latest
+          $tag = "standard-v0.2.0-build-${{ github.run_number }}"
+          gh release create $tag TheSpecialOne-Standard-Windows-x64.zip --title "THE SPECIAL ONE Standard $tag" --notes "Windows x64 Standard v0.2.0: public student signup with student-only role, improved admin layout, private exams, grade-filtered results, PDF/Excel exports and print. Local port 200, no AI. Extract ZIP and run START_STANDARD_WINDOWS.bat." --target "${{ github.sha }}" --latest
           if ($LASTEXITCODE -ne 0) { throw "Release creation failed; check repository Actions write permissions" }
           gh release view $tag --json url,assets --jq '.url'
           if ($LASTEXITCODE -ne 0) { throw 'GitHub release publishing failed' }
