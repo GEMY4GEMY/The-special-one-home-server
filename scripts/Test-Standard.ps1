@@ -31,6 +31,7 @@ try {
   $draftBody = @{title='Standard Release Smoke Test';grade='Primary 3';count=20} | ConvertTo-Json
   $draft = Invoke-RestMethod 'http://127.0.0.1:19000/api/admin/exam-drafts' -Method Post -Body $draftBody -ContentType 'application/json' -WebSession $admin
   $published = Invoke-RestMethod ("http://127.0.0.1:19000/api/standard/publish/"+$draft.id) -Method Post -WebSession $admin
+  Invoke-RestMethod ('http://127.0.0.1:19000/api/admin/standard/visibility/'+$published.id+'/show') -Method Post -WebSession $admin | Out-Null
   $studentSession = New-Object Microsoft.PowerShell.Commands.WebRequestSession
   $studentLogin = @{username='standard_test_student';password='StudentPassword123'} | ConvertTo-Json
   Invoke-RestMethod 'http://127.0.0.1:19000/api/login' -Method Post -Body $studentLogin -ContentType 'application/json' -WebSession $studentSession | Out-Null
