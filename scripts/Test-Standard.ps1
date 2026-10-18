@@ -17,6 +17,8 @@ try {
   $body = @{username='Mrsameh';password=$env:TSO_ADMIN_INITIAL_PASSWORD} | ConvertTo-Json
   $login = Invoke-RestMethod 'http://127.0.0.1:19000/api/login' -Method Post -ContentType 'application/json' -Body $body -WebSession $admin
   if ($login.role -ne 'admin') { throw 'Admin login failed' }
+  $initialVisibility = Invoke-RestMethod 'http://127.0.0.1:19000/api/admin/standard/visibility' -WebSession $admin
+  if (@($initialVisibility).Count -ne 0) { throw 'Expected empty published exams on fresh database' }
   $student = @{username='standard_test_student';password='StudentPassword123';student_code='ST-TEST-001';full_name='Test Student';grade='Primary 3'} | ConvertTo-Json
   Invoke-RestMethod 'http://127.0.0.1:19000/api/students' -Method Post -ContentType 'application/json' -Body $student -WebSession $admin | Out-Null
   $questions = @()
