@@ -31,7 +31,9 @@ async function loadResults(){
   const area=$('results');
   area.replaceChildren();
   try{
-    const results=(await api('/api/standard/my-attempts')).map(x=>({exam_title:'Published exam',score:x.score,maximum:x.maximum,created_at:x.submitted_at}));
+    const teacher=(await api('/api/standard/my-attempts')).map(x=>({exam_title:'Teacher exam',score:x.score,maximum:x.maximum,created_at:x.submitted_at}));
+    const practice=(await api('/api/standard/practice-results')).map(x=>({exam_title:'Custom practice',score:x.score,maximum:x.maximum,created_at:x.submitted_at}));
+    const results=[...teacher,...practice].sort((a,b)=>b.created_at.localeCompare(a.created_at));
     $('completed').textContent=String(results.length);
     const avg=results.length?results.reduce((sum,r)=>sum+100*r.score/r.maximum,0)/results.length:null;
     $('average').textContent=avg===null?'—':Math.round(avg)+'%';
