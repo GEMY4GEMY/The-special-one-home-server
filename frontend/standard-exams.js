@@ -14,7 +14,7 @@ document.addEventListener("DOMContentLoaded",()=>{
       const row=document.createElement("div");row.className="result-item";
       const title=document.createElement("span");title.textContent=d.title+" | "+d.grade+" | "+d.question_count;
       const publish=document.createElement("button");publish.textContent="Publish";publish.className="outline";
-      publish.onclick=async()=>{try{await request("/api/standard/publish/"+encodeURIComponent(d.id),{method:"POST"});publish.textContent="Published";publish.disabled=true}catch(e){alert(e.message)}};
+      publish.onclick=async()=>{try{await request("/api/standard/publish/"+encodeURIComponent(d.id),{method:"POST"});publish.textContent="Published";publish.disabled=true;document.getElementById("std-builder-refresh")?.click()}catch(e){alert(e.message)}};
       row.append(title,publish);drafts.append(row);
     }}catch(e){drafts.textContent=e.message}
   };
@@ -22,6 +22,7 @@ document.addEventListener("DOMContentLoaded",()=>{
   const heading=document.createElement("h3");heading.textContent="My published exams / امتحاناتي";
   const load=document.createElement("button");load.className="primary";load.textContent="Load my exams";
   const content=document.createElement("div");panel.append(heading,load,content);area.prepend(panel);
+  document.addEventListener("tso:student-login",()=>load.click());
   load.onclick=async()=>{
     content.replaceChildren();
     try{const exams=await request("/api/standard/exams");if(!exams.length){content.textContent="No published exams for your grade yet.";return}
