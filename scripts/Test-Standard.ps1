@@ -44,6 +44,9 @@ try {
     if ([int]$_.Exception.Response.StatusCode -eq 403) { $studentDeniedAdmin = $true }
   }
   if (-not $studentDeniedAdmin) { throw 'Student was not blocked from admin exam controls' }
+  $studentDeniedScores = $false
+  try { Invoke-RestMethod 'http://127.0.0.1:19000/api/admin/standard/results' -WebSession $studentSession | Out-Null } catch { if ([int]$_.Exception.Response.StatusCode -eq 403) { $studentDeniedScores = $true } }
+  if (-not $studentDeniedScores) { throw 'Student was not blocked from admin results' }
   $exams = Invoke-RestMethod 'http://127.0.0.1:19000/api/standard/exams' -WebSession $studentSession
   if (@($exams).Count -ne 1) { throw 'Published exam not visible to student' }
   $exam = Invoke-RestMethod ("http://127.0.0.1:19000/api/standard/exams/"+$published.id) -WebSession $studentSession
