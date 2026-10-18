@@ -73,6 +73,8 @@ try {
   $practiceSubmission = @{attempt_id='practice-test-attempt-0001';answers=$answers} | ConvertTo-Json -Depth 6
   $practiceResult = Invoke-RestMethod ('http://127.0.0.1:19000/api/standard/practice/'+$practice.id+'/submit') -Method Post -ContentType 'application/json' -Body $practiceSubmission -WebSession $studentSession
   if ($practiceResult.score -ne 20) { throw 'Custom practice scoring incorrect' }
+  $overview = Invoke-RestMethod 'http://127.0.0.1:19000/api/admin/standard/results' -WebSession $admin
+  if ($overview.total -ne 2) { throw 'Admin dashboard should show both teacher and practice attempts' }
   Write-Host 'PASS: login, import, publish, activation, student exam, practice, grading, results'
 } finally {
   Stop-Process -Id $server.Id -ErrorAction SilentlyContinue
