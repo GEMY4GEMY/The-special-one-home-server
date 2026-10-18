@@ -4,6 +4,8 @@ on:
   push:
     branches: [main]
     paths:
+      - 'samples/**'
+      - 'scripts/Test-Standard.ps1'
       - 'backend/**'
       - 'frontend/**'
       - 'scripts/Start-Standard.ps1'
@@ -24,7 +26,7 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force dist/TheSpecialOneStandard/runtime/Lib/site-packages | Out-Null
-          Copy-Item backend,frontend,scripts,START_STANDARD_WINDOWS.bat dist/TheSpecialOneStandard -Recurse
+          Copy-Item backend,frontend,scripts,samples,START_STANDARD_WINDOWS.bat dist/TheSpecialOneStandard -Recurse
           curl.exe -fL --retry 3 -o python-embed.zip https://www.python.org/ftp/python/3.11.9/python-3.11.9-embed-amd64.zip
           if ($LASTEXITCODE -ne 0) { throw 'Python download failed' }
           Expand-Archive python-embed.zip -DestinationPath dist/TheSpecialOneStandard/runtime
