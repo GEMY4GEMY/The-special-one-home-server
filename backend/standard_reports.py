@@ -1,7 +1,6 @@
 """Offline, admin-only Excel/PDF exports and print-friendly results."""
 from io import BytesIO
 from pathlib import Path
-from datetime import datetime
 from html import escape
 import os
 from fastapi import Depends, Query
@@ -22,7 +21,7 @@ def excel_safe(value):
 @app.get("/api/admin/standard/export.xlsx")
 def export_excel(grade: str | None = Query(default=None,max_length=80), user=Depends(admin_only)):
     from openpyxl import Workbook
-    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.styles import Font, PatternFill, Alignment
     from openpyxl.utils import get_column_letter
     from openpyxl.worksheet.page import PageMargins
     data=data_for(grade,user)
@@ -72,7 +71,7 @@ def bidi_text(value):
 
 @app.get("/api/admin/standard/export.pdf")
 def export_pdf(grade: str | None = Query(default=None,max_length=80), user=Depends(admin_only)):
-    from reportlab.platypus import SimpleDocTemplate,Paragraph,Table,TableStyle,Spacer,KeepTogether
+    from reportlab.platypus import SimpleDocTemplate,Paragraph,Table,TableStyle,Spacer
     from reportlab.lib import colors
     from reportlab.lib.styles import ParagraphStyle
     from reportlab.lib.enums import TA_CENTER
