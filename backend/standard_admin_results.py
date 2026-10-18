@@ -4,7 +4,7 @@ from backend.app import app, db, admin_only
 from backend.standard_exams import init
 
 @app.get("/api/admin/standard/results")
-def admin_standard_results(grade: str | None = Query(default=None, max_length=80), user=Depends(admin_only)):
+def admin_standard_results(grade: str | None = Query(default=None, max_length=80), limit: int = Query(default=500, ge=1, le=50000), user=Depends(admin_only)):
     with db() as conn:
         init(conn)
         conn.execute("CREATE TABLE IF NOT EXISTS standard_practice_results (id INTEGER PRIMARY KEY,student_id INTEGER,practice_id TEXT,attempt_id TEXT,score INTEGER,maximum INTEGER,submitted_at TEXT,UNIQUE(student_id,attempt_id))")
@@ -29,4 +29,4 @@ def admin_standard_results(grade: str | None = Query(default=None, max_length=80
             rows=[r for r in rows if r["grade"]==grade]
         rows.sort(key=lambda x:x["submitted_at"],reverse=True)
         students=len({r["username"] for r in rows})
-        return {"total":len(rows),"students":students,"teacher_attempts":len(teacher),"practice_attempts":len(practice),"results":rows[:500]}
+        return {"total":len(rows),"students":students,"teacher_attempts":len(teacher),"practice_attempts":len(practice),"results":rows[:limit]}
