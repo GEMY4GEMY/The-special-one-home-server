@@ -12,7 +12,7 @@ $env:TSO_ADMIN_INITIAL_PASSWORD = ''
 try {
     # Do not use DB file existence as a proxy for admin account existence.
     # A database may already exist after an interrupted first launch.
-    $needsAdmin = & $python -c 'import os,sqlite3; p=os.environ["TSO_DB_PATH"]; c=sqlite3.connect(p); found=c.execute("SELECT 1 FROM sqlite_master WHERE type=? AND name=?",("table","users")).fetchone(); print("NO" if found and c.execute("SELECT 1 FROM users WHERE username=?", (os.environ["TSO_ADMIN_USERNAME"],)).fetchone() else "YES"); c.close()'
+    $needsAdmin = & $python (Join-Path $root 'scripts\Check-Standard-Admin.py')
     if ($LASTEXITCODE -ne 0) { throw 'Unable to inspect administrator account' }
     $adminCheck = [string]($needsAdmin | Select-Object -Last 1)
     if ($adminCheck.Trim() -eq 'YES') {
@@ -22,7 +22,7 @@ try {
         $ptr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secret)
         try {
             $env:TSO_ADMIN_INITIAL_PASSWORD = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($ptr)
-            & $python -c 'from backend.app import initialize; initialize()'
+            & $python (Join-Path $root 'scripts\Initialize-Standard-Admin.py')
             if ($LASTEXITCODE -ne 0) { throw 'Administrator setup failed' }
         } finally {
             [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ptr)
