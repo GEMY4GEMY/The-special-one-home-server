@@ -1,6 +1,7 @@
 $ErrorActionPreference = 'Stop'
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 Set-Location $root
+Write-Host 'THE SPECIAL ONE Standard launcher: FIXED-ADMIN-SETUP-20261019'
 $python = Join-Path $root 'runtime\python.exe'
 if (-not (Test-Path $python)) { throw 'Embedded Python runtime missing.' }
 $env:TSO_ADMIN_USERNAME = 'Mrsameh'
@@ -12,7 +13,9 @@ $env:TSO_ADMIN_INITIAL_PASSWORD = ''
 try {
     # Do not use DB file existence as a proxy for admin account existence.
     # A database may already exist after an interrupted first launch.
-    $needsAdmin = & $python (Join-Path $root 'scripts\Check-Standard-Admin.py')
+    $adminCheckScript = Join-Path $root 'scripts\Check-Standard-Admin.py'
+    if (-not (Test-Path $adminCheckScript)) { throw 'Incomplete or old release: Check-Standard-Admin.py is missing. Extract latest ZIP into a NEW folder.' }
+    $needsAdmin = & $python $adminCheckScript
     if ($LASTEXITCODE -ne 0) { throw 'Unable to inspect administrator account' }
     $adminCheck = [string]($needsAdmin | Select-Object -Last 1)
     if ($adminCheck.Trim() -eq 'YES') {
