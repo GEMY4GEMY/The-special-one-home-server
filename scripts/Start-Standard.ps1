@@ -5,14 +5,17 @@ $python = Join-Path $root 'runtime\python.exe'
 if (-not (Test-Path $python)) { throw 'Embedded Python runtime missing.' }
 $env:TSO_ADMIN_USERNAME = 'Mrsameh'
 $env:TSO_EDITION = 'standard'
-$env:TSO_DB_PATH = Join-Path $root 'backend\data\standard.sqlite3'
+$dataDir = Join-Path $root 'backend\data'
+New-Item -ItemType Directory -Path $dataDir -Force | Out-Null
+$env:TSO_DB_PATH = Join-Path $dataDir 'standard.sqlite3'
 $env:TSO_ADMIN_INITIAL_PASSWORD = ''
 try {
     # Do not use DB file existence as a proxy for admin account existence.
     # A database may already exist after an interrupted first launch.
     $needsAdmin = & $python -c 'import os,sqlite3; p=os.environ["TSO_DB_PATH"]; c=sqlite3.connect(p); found=c.execute("SELECT 1 FROM sqlite_master WHERE type=? AND name=?",("table","users")).fetchone(); print("NO" if found and c.execute("SELECT 1 FROM users WHERE username=?", (os.environ["TSO_ADMIN_USERNAME"],)).fetchone() else "YES"); c.close()'
     if ($LASTEXITCODE -ne 0) { throw 'Unable to inspect administrator account' }
-    if (($needsAdmin | Select-Object -Last 1).Trim() -eq 'YES') {
+    $adminCheck = [string]($needsAdmin | Select-Object -Last 1)
+    if ($adminCheck.Trim() -eq 'YES') {
         Write-Host 'First-time administrator setup. Username: Mrsameh'
         $secret = Read-Host 'Set a NEW administrator password (12 characters minimum)' -AsSecureString
         if ($secret.Length -lt 12) { throw 'Administrator password must contain at least 12 characters' }
