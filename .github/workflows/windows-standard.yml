@@ -46,6 +46,24 @@ jobs:
           ./runtime/python.exe -c "from backend.standard_app import app; print(app.title)"
           if ($LASTEXITCODE -ne 0) { throw 'Embedded runtime failed' }
           Pop-Location
+      - name: Verify first-run administrator setup in packaged Windows runtime
+        shell: pwsh
+        run: |
+          Push-Location dist/TheSpecialOneStandard
+          $env:TSO_EDITION = 'standard'
+          $env:TSO_ADMIN_USERNAME = 'Mrsameh'
+          $env:TSO_DB_PATH = Join-Path $env:RUNNER_TEMP 'tso-first-run-check.sqlite3'
+          Remove-Item $env:TSO_DB_PATH -ErrorAction SilentlyContinue
+          $result = & ./runtime/python.exe scripts/Check-Standard-Admin.py
+          if ($LASTEXITCODE -ne 0 -or ($result | Select-Object -Last 1) -ne 'YES') { throw 'Fresh database must require administrator setup' }
+          $env:TSO_ADMIN_INITIAL_PASSWORD = 'TestOnlyFirstRunPassword123!'
+          & ./runtime/python.exe scripts/Initialize-Standard-Admin.py
+          if ($LASTEXITCODE -ne 0) { throw 'First-run administrator initialization failed' }
+          Remove-Item Env:TSO_ADMIN_INITIAL_PASSWORD
+          $result = & ./runtime/python.exe scripts/Check-Standard-Admin.py
+          if ($LASTEXITCODE -ne 0 -or ($result | Select-Object -Last 1) -ne 'NO') { throw 'Existing administrator was not detected' }
+          Remove-Item $env:TSO_DB_PATH -ErrorAction SilentlyContinue
+          Pop-Location
       - name: Generate bundled PDF curriculum example
         shell: pwsh
         run: |
