@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 from backend.app import app, db, admin_only, init_question_tables
 from backend.question_selection import choose_questions
 from backend.standard_exams import init as init_standard_exams
+from datetime import datetime, timezone
 
 KINDS={"choose","fill","rearrange","letters"}
 
@@ -72,3 +73,70 @@ def set_visibility(publication_id:str,state:str,user=Depends(admin_only)):
             conn.execute("UPDATE standard_visibility SET active=0 WHERE publication_id IN (SELECT p.id FROM standard_publications p JOIN exam_drafts d ON d.id=p.draft_id WHERE d.grade=?)",(row["grade"],))
         conn.execute("INSERT INTO standard_visibility(publication_id,active) VALUES (?,?) ON CONFLICT(publication_id) DO UPDATE SET active=excluded.active",(publication_id,int(state=="show")))
         return {"id":publication_id,"active":state=="show","grade":row["grade"]}
+
+class DeleteQuestionsRequest(BaseModel):
+    scope: str
+    stage: str | None = None
+    grade: str | None = None
+    confirm: str
+
+@app.post("/api/admin/standard/create-and-show")
+def create_and_show(payload: BuildRequest, user=Depends(admin_only)):
+    if any(kind not in KINDS for kind in payload.kinds):
+        raise HTTPException(422, "Unsupported question type")
+    units=list(dict.fromkeys(x.strip() for x in payload.units if x.strip()))
+    kinds=list(dict.fromkeys(payload.kinds))
+    if not units:
+        raise HTTPException(422, "Choose at least one unit")
+    with db() as conn:
+        init_standard_exams(conn)
+        init_visibility(conn)
+        unitmarks=",".join("?" for _ in units)
+        kindmarks=",".join("?" for _ in kinds)
+        rows=conn.execute(f"SELECT id,kind,difficulty FROM question_bank WHERE grade=? AND unit IN ({unitmarks}) AND kind IN ({kindmarks})",(payload.grade,*units,*kinds)).fetchall()
+        if len(rows)<payload.count:
+            raise HTTPException(422,f"Only {len(rows)} matching questions available; requested {payload.count}")
+        try:
+            selected=choose_questions(rows,payload.count)
+        except ValueError as exc:
+            raise HTTPException(422,str(exc))
+        draft_id=secrets.token_urlsafe(18)
+        publication_id=secrets.token_urlsafe(18)
+        conn.execute("INSERT INTO exam_drafts(id,title,grade,question_ids) VALUES (?,?,?,?)",(draft_id,payload.title,payload.grade,json.dumps(selected)))
+        conn.execute("INSERT INTO standard_publications(id,draft_id,published_at) VALUES (?,?,?)",(publication_id,draft_id,datetime.now(timezone.utc).isoformat()))
+        conn.execute("UPDATE standard_visibility SET active=0 WHERE publication_id IN (SELECT p.id FROM standard_publications p JOIN exam_drafts d ON d.id=p.draft_id WHERE d.grade=?)",(payload.grade,))
+        conn.execute("INSERT INTO standard_visibility(publication_id,active) VALUES (?,1)",(publication_id,))
+    return {"id":publication_id,"grade":payload.grade,"question_count":len(selected),"active":True,"status":"published"}
+
+@app.post("/api/admin/standard/questions/delete")
+def delete_questions(payload: DeleteQuestionsRequest, user=Depends(admin_only)):
+    if payload.confirm!="DELETE QUESTIONS":
+        raise HTTPException(422,"Confirmation required: DELETE QUESTIONS")
+    if payload.scope=="all":
+        where,params="1=1",()
+    elif payload.scope=="stage" and payload.stage in ("Primary","Preparatory","Secondary"):
+        where,params="grade LIKE ?",(payload.stage+" %",)
+    elif payload.scope=="grade" and payload.grade and payload.grade.split(" ")[0] in ("Primary","Preparatory","Secondary"):
+        where,params="grade=?", (payload.grade,)
+    else:
+        raise HTTPException(422,"Select a valid deletion scope")
+    with db() as conn:
+        init_standard_exams(conn)
+        init_visibility(conn)
+        count=conn.execute("SELECT COUNT(*) FROM question_bank WHERE "+where,params).fetchone()[0]
+        # Remove exams that reference deleted questions, preserving historical student scores.
+        ids={r[0] for r in conn.execute("SELECT id FROM question_bank WHERE "+where,params)}
+        affected=[]
+        for d in conn.execute("SELECT id,question_ids FROM exam_drafts"):
+            if ids.intersection(json.loads(d["question_ids"])):
+                affected.append(d["id"])
+        if affected:
+            marks=",".join("?" for _ in affected)
+            publications=[r[0] for r in conn.execute(f"SELECT id FROM standard_publications WHERE draft_id IN ({marks})",affected)]
+            if publications:
+                pubmarks=",".join("?" for _ in publications)
+                conn.execute(f"DELETE FROM standard_visibility WHERE publication_id IN ({pubmarks})",publications)
+                conn.execute(f"DELETE FROM standard_publications WHERE id IN ({pubmarks})",publications)
+            conn.execute(f"DELETE FROM exam_drafts WHERE id IN ({marks})",affected)
+        conn.execute("DELETE FROM question_bank WHERE "+where,params)
+    return {"deleted_questions":count,"removed_exams":len(affected),"historical_scores_preserved":True}
