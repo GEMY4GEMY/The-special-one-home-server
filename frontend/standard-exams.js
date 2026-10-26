@@ -3,21 +3,6 @@ document.addEventListener("DOMContentLoaded",()=>{
   const area=document.getElementById("student-area");
   const admin=document.getElementById("admin-area");
   if(!area||!admin)return;
-  const adminPanel=document.createElement("section");adminPanel.className="panel admin-panel";
-  adminPanel.innerHTML='<h3>Publish exam drafts / نشر الامتحانات</h3><button type="button" class="outline" id="std-load-drafts">Refresh drafts</button><div id="std-drafts"></div>';
-  admin.prepend(adminPanel);
-  const request=async(url,options={})=>{const r=await fetch(url,{credentials:"same-origin",...options});const data=await r.json();if(!r.ok)throw Error(data.detail||"Request failed");return data};
-  const drafts=document.getElementById("std-drafts");
-  document.getElementById("std-load-drafts").onclick=async()=>{
-    drafts.replaceChildren();
-    try{for(const d of await request("/api/admin/exam-drafts")){
-      const row=document.createElement("div");row.className="result-item";
-      const title=document.createElement("span");title.textContent=d.title+" | "+d.grade+" | "+d.question_count;
-      const publish=document.createElement("button");publish.textContent="Publish";publish.className="outline";
-      publish.onclick=async()=>{try{await request("/api/standard/publish/"+encodeURIComponent(d.id),{method:"POST"});publish.textContent="Published";publish.disabled=true;document.getElementById("std-builder-refresh")?.click()}catch(e){alert(e.message)}};
-      row.append(title,publish);drafts.append(row);
-    }}catch(e){drafts.textContent=e.message}
-  };
   const panel=document.createElement("section");panel.className="panel";panel.id="standard-exams";
   const heading=document.createElement("h3");heading.textContent="Required exam / الامتحان المحدد من المدير";
   const load=document.createElement("button");load.className="primary";load.textContent="Refresh assigned exam / تحديث الامتحان";
