@@ -142,6 +142,15 @@ try {
   if ($LASTEXITCODE -ne 0) { throw 'Exported Excel did not contain expected student' }
   $printPage = Invoke-WebRequest 'http://127.0.0.1:19000/api/admin/standard/print?grade=Primary%203' -WebSession $admin
   if ($printPage.Content -notmatch 'THE SPECIAL ONE') { throw 'Print view failed' }
+  # Scoped deletion must preserve other grades and existing score history.
+  $deleteBody = @{scope='grade';grade='Primary 1';confirm='DELETE QUESTIONS'} | ConvertTo-Json
+  $deleted = Invoke-RestMethod 'http://127.0.0.1:19000/api/admin/standard/questions/delete' -Method Post -ContentType 'application/json' -Body $deleteBody -WebSession $admin
+  if ($deleted.deleted_questions -lt 1 -or -not $deleted.historical_scores_preserved) { throw 'Scoped question deletion failed' }
+  $remainingFilters = Invoke-RestMethod 'http://127.0.0.1:19000/api/admin/standard/filters' -WebSession $admin
+  if (@($remainingFilters | Where-Object { $_.grade -eq 'Primary 1' }).Count -ne 0) { throw 'Deleted grade still has questions' }
+  if (@($remainingFilters | Where-Object { $_.grade -eq 'Primary 3' }).Count -eq 0) { throw 'Scoped deletion affected another grade' }
+  $stillAssigned = @(Invoke-RestMethod 'http://127.0.0.1:19000/api/standard/exams' -WebSession $studentSession)
+  if ($stillAssigned.Count -ne 1 -or $stillAssigned[0].id -ne $auto.id) { throw 'Deleting another grade broke active student exam' }
   Write-Host 'PASS: login, import, publish, activation, student exam, practice, grading, results'
 } finally {
   Stop-Process -Id $server.Id -ErrorAction SilentlyContinue
