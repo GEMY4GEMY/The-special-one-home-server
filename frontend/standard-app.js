@@ -72,6 +72,7 @@ $('login-form').addEventListener('submit',async e=>{
 });
 $('logout').addEventListener('click',async()=>{
   try{await api('/api/logout',{method:'POST'});}catch{}
+  try{for(let i=sessionStorage.length-1;i>=0;i--){const key=sessionStorage.key(i);if(key&&key.startsWith('tso-exam-progress:'))sessionStorage.removeItem(key)}}catch(_){}
   location.reload();
 });
 async function restoreSession(){try{showDashboard(await api('/api/me'));}catch{}}
