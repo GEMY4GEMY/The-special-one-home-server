@@ -65,11 +65,17 @@ document.addEventListener("DOMContentLoaded",()=>{
     content.replaceChildren();
     try{
       const exam=await request("/api/standard/exams/"+encodeURIComponent(id));
-      const answers={};
+      const storageKey="tso-exam-progress:"+id;
+      let saved=null;
+      try{saved=JSON.parse(sessionStorage.getItem(storageKey)||"null")}catch(_){}
+      const answers=saved&&typeof saved.answers==="object"&&saved.answers? saved.answers:{};
       const pageSize=6;
-      let page=0;
-      const attemptId=crypto.randomUUID?crypto.randomUUID():String(Date.now())+"-attempt";
+      let page=Number.isInteger(saved?.page)?Math.max(0,saved.page):0;
+      const attemptId=saved?.attemptId||(crypto.randomUUID?crypto.randomUUID():String(Date.now())+"-attempt");
+      const saveProgress=()=>{try{sessionStorage.setItem(storageKey,JSON.stringify({answers,page,attemptId}))}catch(_){}};
+      window.addEventListener("pagehide",saveProgress,{once:true});
       const totalPages=Math.ceil(exam.questions.length/pageSize);
+      page=Math.min(page,Math.max(0,totalPages-1));
       const render=()=>{
         content.replaceChildren();
         const paper=document.createElement("article");paper.className="tso-exam-paper";
@@ -92,14 +98,14 @@ document.addEventListener("DOMContentLoaded",()=>{
             q.options.forEach((option,n)=>{
               const label=document.createElement("label");label.className="tso-paper-option";
               const input=document.createElement("input");input.type="radio";input.name="answer-"+q.id;input.value=option;input.checked=answers[q.id]===option;
-              input.onchange=()=>{answers[q.id]=option};
+              input.onchange=()=>{answers[q.id]=option;saveProgress()};
               const letter=document.createElement("strong");letter.textContent=String.fromCharCode(65+n)+".";
               const span=document.createElement("span");span.textContent=option;
               label.append(input,letter,span);choices.append(label);
             });
           }else{
             const field=document.createElement("input");field.type="text";field.className="tso-written-answer";field.placeholder=q.type==="rearrange"?"Write the correct sentence / رتب الجملة":"Write your answer / اكتب الإجابة";field.value=answers[q.id]||"";
-            field.oninput=()=>{answers[q.id]=field.value};choices.append(field);
+            field.oninput=()=>{answers[q.id]=field.value;saveProgress()};choices.append(field);
           }
           item.append(choices);list.append(item);
         });
@@ -108,14 +114,15 @@ document.addEventListener("DOMContentLoaded",()=>{
         content.append(paper);
         const nav=document.createElement("nav");nav.className="tso-paper-nav";
         const indicator=document.createElement("span");indicator.textContent="Page "+(page+1)+" of "+totalPages+" • Answered "+Object.keys(answers).filter(k=>answers[k]?.trim()).length+"/"+exam.questions.length;
-        const previous=document.createElement("button");previous.className="outline";previous.textContent="← Previous page";previous.disabled=page===0;previous.onclick=()=>{page--;render();paper.scrollIntoView({behavior:"smooth",block:"start"})};
+        const previous=document.createElement("button");previous.className="outline";previous.textContent="← Previous page";previous.disabled=page===0;previous.onclick=()=>{page--;saveProgress();render();content.scrollIntoView({behavior:"smooth",block:"start"})};
         const next=document.createElement("button");next.className="primary";next.textContent=page===totalPages-1?"Finish exam / إنهاء الامتحان":"Next page →";
         next.onclick=async()=>{
-          if(page<totalPages-1){page++;render();content.scrollIntoView({behavior:"smooth",block:"start"});return}
+          if(page<totalPages-1){page++;saveProgress();render();content.scrollIntoView({behavior:"smooth",block:"start"});return}
           if(!confirm("Finish and submit your exam? / هل تريد إنهاء الامتحان وتسليمه؟"))return;
           next.disabled=true;
           try{
             const result=await request("/api/standard/exams/"+encodeURIComponent(id)+"/submit",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({attempt_id:attemptId,answers})});
+            try{sessionStorage.removeItem(storageKey)}catch(_){}
             content.replaceChildren();
             const score=document.createElement("section");score.className="tso-exam-result";score.textContent="🌟 Your result / نتيجتك: "+result.score+" / "+result.maximum;content.append(score);
             if(typeof loadResults==="function")loadResults();
