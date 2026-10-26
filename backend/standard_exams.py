@@ -53,7 +53,7 @@ def published_exams(user=Depends(current_user)):
         grade = conn.execute("SELECT grade FROM students WHERE user_id=?", (user["id"],)).fetchone()
         if not grade:
             raise HTTPException(403, "Student profile missing")
-        rows = conn.execute("SELECT p.id,d.title,d.grade,d.question_ids FROM standard_publications p JOIN exam_drafts d ON d.id=p.draft_id JOIN standard_visibility v ON v.publication_id=p.id AND v.active=1 WHERE d.grade=? ORDER BY p.published_at DESC", (grade["grade"],)).fetchall()
+        rows = conn.execute("SELECT p.id,d.title,d.grade,d.question_ids FROM standard_publications p JOIN exam_drafts d ON d.id=p.draft_id JOIN standard_visibility v ON v.publication_id=p.id AND v.active=1 WHERE d.grade=? ORDER BY p.published_at DESC LIMIT 1", (grade["grade"],)).fetchall()
         return [{"id":r["id"],"title":r["title"],"question_count":len(json.loads(r["question_ids"]))} for r in rows]
 
 def load_exam(conn, exam_id, user):
