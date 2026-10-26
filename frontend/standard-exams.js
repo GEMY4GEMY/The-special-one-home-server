@@ -75,6 +75,7 @@ document.addEventListener("DOMContentLoaded",()=>{
       const saveProgress=()=>{try{sessionStorage.setItem(storageKey,JSON.stringify({answers,page,attemptId}))}catch(_){}};
       window.addEventListener("pagehide",saveProgress,{once:true});
       const totalPages=Math.ceil(exam.questions.length/pageSize);
+      if(saved){const resumed=document.createElement("p");resumed.className="muted";resumed.textContent="Your saved answers were restored / تم استرجاع إجاباتك المحفوظة";content.append(resumed)}
       page=Math.min(page,Math.max(0,totalPages-1));
       const render=()=>{
         content.replaceChildren();
