@@ -26,3 +26,12 @@
 #admin-area>.admin-panel .results{max-height:460px;overflow:auto}
 @media(max-width:850px){#admin-area>.admin-panel{grid-column:1/-1}}
 @media(max-width:560px){#admin-area>.admin-panel .admin-form{grid-template-columns:1fr}}
+
+/* Compact exam-builder checkboxes: override the global text-input dimensions. */
+#std-builder-form fieldset{min-width:0;border:1px solid #d8e3f3;border-radius:13px;padding:12px 14px;margin:0}
+#std-builder-form fieldset legend{font-size:14px;font-weight:800;color:#244c85;padding:0 6px}
+#std-builder-units,#std-builder-kinds{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
+#std-builder-units label,#std-builder-kinds label{display:inline-flex!important;align-items:center!important;gap:7px;margin:0!important;padding:7px 10px;background:#f4f8ff;border:1px solid #e0e9f6;border-radius:10px;font-size:13px;line-height:1.3;font-weight:700;cursor:pointer;white-space:nowrap}
+#std-builder-units input[type="checkbox"],#std-builder-kinds input[type="checkbox"]{appearance:auto!important;box-sizing:border-box!important;flex:0 0 17px!important;display:inline-block!important;width:17px!important;height:17px!important;min-width:17px!important;min-height:17px!important;max-width:17px!important;max-height:17px!important;margin:0!important;padding:0!important;border:0!important;border-radius:4px!important;accent-color:#2466d0;vertical-align:middle}
+#std-builder-form .primary{justify-content:center;text-align:center;line-height:1.4;min-height:52px}
+@media(max-width:560px){#std-builder-units,#std-builder-kinds{gap:7px}#std-builder-units label,#std-builder-kinds label{font-size:12px;padding:7px 9px}}
