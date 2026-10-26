@@ -20,6 +20,7 @@ async function api(path, options={}){
 }
 function showDashboard(me){
   $('login-panel').classList.add('hidden');
+  $('admin-login-panel').classList.add('hidden');
   $('dashboard').classList.remove('hidden');
   $('welcome-title').textContent='Hello, '+me.username+'!';
   $('welcome-subtitle').textContent=me.role==='student'?'Your results are private and ready to explore.':'Your administration workspace.';
@@ -46,6 +47,19 @@ async function loadResults(){
     }
   }catch{const p=document.createElement('p');p.textContent='Results are temporarily unavailable. Please reconnect.';area.append(p);}
 }
+$('admin-open').addEventListener('click',()=>{
+  $('admin-login-panel').classList.toggle('hidden');
+  if(!$('admin-login-panel').classList.contains('hidden'))$('admin-password').focus();
+});
+$('admin-login-form').addEventListener('submit',async e=>{
+  e.preventDefault();
+  $('admin-login-error').textContent='';
+  try{
+    const me=await api('/api/standard/admin-login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:$('admin-password').value})});
+    $('admin-password').value='';
+    showDashboard(me);
+  }catch(error){$('admin-login-error').textContent=error.message==='Invalid administrator password'?'Wrong administrator password / كلمة مرور المدير غير صحيحة':error.message;}
+});
 $('login-form').addEventListener('submit',async e=>{
   e.preventDefault();
   $('login-error').textContent='';
