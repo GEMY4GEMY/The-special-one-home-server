@@ -17,15 +17,20 @@ document.addEventListener("DOMContentLoaded",()=>{
   form.addEventListener("submit",async event=>{
     event.preventDefault();
     if(!input.files[0])return;
+    button.disabled=true;
     const data=new FormData();data.append("file",input.files[0]);
     status.textContent="Importing...";
     try{
       const response=await fetch("/api/admin/question-bank/import",{method:"POST",body:data,credentials:"same-origin"});
-      const result=await response.json();
-      if(!response.ok)throw new Error(typeof result.detail==="string"?result.detail:"Invalid question bank");
+      const result=await response.json().catch(()=>({}));
+      if(response.status===401||response.status===403){
+        throw new Error("Administrator access required / يلزم تسجيل الدخول كمدير. اضغط Admin أعلى الصفحة وأدخل كلمة مرور المدير، ثم أعد الاستيراد.");
+      }
+      if(!response.ok)throw new Error(typeof result.detail==="string"?result.detail:"Import rejected (HTTP "+response.status+")");
       status.textContent="Imported "+result.imported+" questions successfully.";
       if(typeof refreshAdminQuestions==="function")await refreshAdminQuestions();
     }catch(error){status.textContent="Import failed: "+error.message;}
+    finally{button.disabled=false;}
   });
   panel.append(title,description,form,status);
   admin.prepend(panel);
