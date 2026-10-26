@@ -49,6 +49,8 @@ try {
   $import = Invoke-RestMethod 'http://127.0.0.1:19000/api/admin/question-bank/import' -Method Post -Form @{file=Get-Item $bankPath} -WebSession $admin
   if ($import.imported -ne 20) { throw 'Question import failed' }
 
+  & ./runtime/python.exe -c 'from backend.standard_import import validate_bank; q={"grade":"Primary 1","unit":"Unit 1","lesson":"Lesson 1","difficulty":"easy","kind":"choose","prompt":"What is this?","visual":"🍎","image":"/static/images/apple.png","answer":"apple","options":["apple","pen"]}; rows=validate_bank({"format":"the-special-one-question-bank","version":1,"questions":[q]}); assert "🍎" in rows[0][5] and "[[image:/static/images/apple.png]]" in rows[0][5]; print("JSON image and emoji validated")'
+  if ($LASTEXITCODE -ne 0) { throw 'JSON illustration validation failed' }
   $targetedBank = @{format='the-special-one-question-bank';version=1;questions=@(
     @{grade='Primary 3';unit='Unit 1';lesson='Lesson 1';difficulty='easy';kind='choose';prompt='Targeted test question';answer='A';options=@('A','B')}
   )} | ConvertTo-Json -Depth 8
