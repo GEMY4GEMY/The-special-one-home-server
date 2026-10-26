@@ -91,7 +91,7 @@ def health():
 @app.post("/api/login")
 def login(payload: Login, response: Response):
     with db() as conn:
-        user = conn.execute("SELECT * FROM users WHERE username=?", (payload.username,)).fetchone()
+        user = conn.execute("SELECT * FROM users WHERE username = ? COLLATE NOCASE", (payload.username.strip().replace(" ", "_"),)).fetchone()
     if not user or not password_hash.verify(payload.password, user["password_hash"]):
         raise HTTPException(401, "Invalid credentials")
     token = secrets.token_urlsafe(32)
