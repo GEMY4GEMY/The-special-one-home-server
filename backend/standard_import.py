@@ -35,6 +35,6 @@ def validate_bank(payload):
         if visual:
             prompt = visual + "  " + prompt
         if image:
-            prompt += "\\n[[image:" + image + "]]"
+            prompt += "\n[[image:" + image + "]]"
         rows.append((q["grade"].strip(), q["unit"].strip(), q["lesson"].strip(), q["difficulty"].strip(), q["kind"].strip(), prompt, q["answer"].strip(), json.dumps(options, ensure_ascii=False)))
     return rows
