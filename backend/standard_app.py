@@ -7,7 +7,9 @@ from backend.app import password_hash
 from fastapi import Depends, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from backend.app import FRONTEND
-from backend.app import app, admin_only, db, init_question_tables
+from backend.app import app, admin_only, db, init_question_tables, ADMIN_USERNAME, password_hash as hasher, sessions
+from fastapi import Response
+import hashlib
 
 # Disable inference routes in this edition, even if a client calls them directly.
 app.router.routes[:] = [
@@ -42,11 +44,15 @@ class PublicStudentSignup(BaseModel):
     full_name: str = Field(min_length=3, max_length=120)
     username: str = Field(min_length=3, max_length=80, pattern=r"^[A-Za-z0-9_.-]+$")
     password: str = Field(min_length=10, max_length=128)
+    stage: str = Field(min_length=1, max_length=30)
     grade: str = Field(min_length=2, max_length=80)
 
 @app.post("/api/standard/register", status_code=201)
 def register_student(payload: PublicStudentSignup):
     """Public registration can create student accounts only, never admins."""
+    allowed = {"Primary": 6, "Preparatory": 3, "Secondary": 3}
+    if payload.stage not in allowed or payload.grade not in [f"{payload.stage} {i}" for i in range(1, allowed[payload.stage] + 1)]:
+        raise HTTPException(422, "Select a valid stage and grade")
     code = "STU-" + secrets.token_hex(6).upper()
     try:
         with db() as conn:
@@ -61,6 +67,21 @@ def register_student(payload: PublicStudentSignup):
     except sqlite3.IntegrityError:
         raise HTTPException(409, "Username already exists; choose another")
     return {"username": payload.username, "student_code": code, "role": "student"}
+
+class AdminPasswordLogin(BaseModel):
+    password: str
+
+@app.post("/api/standard/admin-login")
+def admin_password_login(payload: AdminPasswordLogin, response: Response):
+    """Admin entry needs a password only; no username field on the public page."""
+    with db() as conn:
+        row = conn.execute("SELECT id,password_hash FROM users WHERE username=? AND role='admin'", (ADMIN_USERNAME,)).fetchone()
+    if not row or not hasher.verify(payload.password, row["password_hash"]):
+        raise HTTPException(401, "Invalid administrator password")
+    token = secrets.token_urlsafe(32)
+    sessions[hashlib.sha256(token.encode()).hexdigest()] = row["id"]
+    response.set_cookie("tso_session", token, httponly=True, samesite="strict", secure=False, max_age=28800)
+    return {"username": ADMIN_USERNAME, "role": "admin"}
 
 @app.get('/api/edition')
 def standard_edition():
