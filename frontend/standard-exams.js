@@ -84,9 +84,9 @@ document.addEventListener("DOMContentLoaded",()=>{
           const item=document.createElement("section");item.className="tso-paper-question";
           const prompt=document.createElement("div");prompt.className="tso-paper-prompt";
           const number=document.createElement("span");number.className="tso-question-number";number.textContent=String(page*pageSize+i+1);
-          const text=document.createElement("span");const imageMatch=q.prompt.match(/\\n\\[\\[image:(\\/static\\/[A-Za-z0-9_./-]+)\\]\\]$/);text.textContent=imageMatch?q.prompt.slice(0,imageMatch.index):q.prompt;
+          const text=document.createElement("span");const imageMarker="\n[[image:";const markerIndex=q.prompt.lastIndexOf(imageMarker);const imagePath=markerIndex>=0&&q.prompt.endsWith("]]")?q.prompt.slice(markerIndex+imageMarker.length,-2):"";const imageMatch=/^\/static\/[A-Za-z0-9_./-]+$/.test(imagePath)?imagePath:null;text.textContent=imageMatch?q.prompt.slice(0,markerIndex):q.prompt;
           prompt.append(number,text);item.append(prompt);
-          if(imageMatch){const img=document.createElement("img");img.src=imageMatch[1];img.alt="Question illustration / صورة السؤال";img.loading="lazy";img.style.cssText="display:block;max-width:100%;max-height:180px;object-fit:contain;margin:12px auto;border-radius:10px";item.append(img)}
+          if(imageMatch){const img=document.createElement("img");img.src=imageMatch;img.alt="Question illustration / صورة السؤال";img.loading="lazy";img.style.cssText="display:block;max-width:100%;max-height:180px;object-fit:contain;margin:12px auto;border-radius:10px";item.append(img)}
           const choices=document.createElement("div");choices.className="tso-paper-choices";
           if(q.type==="choose"){
             q.options.forEach((option,n)=>{
