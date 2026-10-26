@@ -14,7 +14,7 @@ document.addEventListener("DOMContentLoaded",()=>{
     try{const exams=await request("/api/standard/exams");if(!exams.length){content.textContent="No required exam assigned to your grade yet / لم يحدد المدير امتحانًا لصفك بعد.";return}
       const exam=exams[0];
       const label=document.createElement("p");label.textContent="Assigned by your teacher / امتحان محدد من المدير: "+exam.title+" ("+exam.question_count+" questions)";
-      const b=document.createElement("button");b.className="primary";b.textContent="Start required exam / ابدأ الامتحان الإجباري";b.onclick=()=>start(exam.id);
+      const b=document.createElement("button");b.className="primary";let saved=false;try{saved=Object.keys(sessionStorage).some(key=>key.startsWith("tso-exam-progress:")&&key.endsWith(":"+exam.id))}catch(_){}b.textContent=saved?"Continue exam / استكمال الامتحان":"Start required exam / ابدأ الامتحان الإجباري";b.onclick=()=>start(exam.id);
       content.append(label,b);
     }catch(e){content.textContent=e.message}
   };
