@@ -55,6 +55,7 @@ class Login(BaseModel):
     password: str
 
 class StudentCreate(BaseModel):
+    stage: str
     username: str
     password: str
     student_code: str
@@ -113,6 +114,9 @@ def me(user=Depends(current_user)):
 def create_student(payload: StudentCreate, user=Depends(admin_only)):
     if len(payload.password) < 10:
         raise HTTPException(400, "Student password must have at least 10 characters")
+    allowed = {"Primary": 6, "Preparatory": 3, "Secondary": 3}
+    if payload.stage not in allowed or payload.grade not in [f"{payload.stage} {i}" for i in range(1, allowed[payload.stage] + 1)]:
+        raise HTTPException(422, "Select a valid stage and grade")
     try:
         with db() as conn:
             cur = conn.execute("INSERT INTO users(username,password_hash,role) VALUES (?,?,?)", (payload.username, password_hash.hash(payload.password), "student"))
