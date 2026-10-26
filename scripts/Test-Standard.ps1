@@ -98,6 +98,14 @@ try {
   $builderBody = @{title='Filtered Unit Exam';grade='Primary 3';units=@('Unit 1');kinds=@('choose');count=20} | ConvertTo-Json
   $filteredDraft = Invoke-RestMethod 'http://127.0.0.1:19000/api/admin/standard/build' -Method Post -ContentType 'application/json' -Body $builderBody -WebSession $admin
   if ($filteredDraft.question_count -ne 20) { throw 'Filtered exam builder failed' }
+  # Verify the unified one-click flow makes the assigned exam immediately visible.
+  $autoBody = @{title='Primary 3 Auto Published';grade='Primary 3';units=@('Unit 1');kinds=@('choose');count=20} | ConvertTo-Json
+  $auto = Invoke-RestMethod 'http://127.0.0.1:19000/api/admin/standard/create-and-show' -Method Post -ContentType 'application/json' -Body $autoBody -WebSession $admin
+  if (-not $auto.active -or $auto.question_count -ne 20) { throw 'One-click publishing failed' }
+  $studentAssigned = @(Invoke-RestMethod 'http://127.0.0.1:19000/api/standard/exams' -WebSession $studentSession)
+  if ($studentAssigned.Count -ne 1 -or $studentAssigned[0].id -ne $auto.id) { throw 'One-click exam not shown on student home' }
+  $autoExam = Invoke-RestMethod ('http://127.0.0.1:19000/api/standard/exams/'+$auto.id) -WebSession $studentSession
+  if ($autoExam.questions.Count -ne 20) { throw 'One-click exam questions unavailable to student' }
   $studentFilters = Invoke-RestMethod 'http://127.0.0.1:19000/api/standard/practice-filters' -WebSession $studentSession
   if ($studentFilters.grade -ne 'Primary 3') { throw 'Student grade filter failed' }
   $practiceBody = @{units=@('Unit 1');kinds=@('choose');count=20} | ConvertTo-Json
