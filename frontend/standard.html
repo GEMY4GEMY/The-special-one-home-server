@@ -10,9 +10,10 @@
 <div class="shell">
 <header class="topbar">
  <a class="brand" href="/" aria-label="THE SPECIAL ONE Home"><span class="brand-mark">★</span><span>THE SPECIAL ONE<small>Sponsored by Mr. Sameh Abdel Hafeez</small></span></a>
- <span class="network" id="network" role="status">Checking server…</span>
+ <span class="network" id="network" role="status">Checking server…</span><button type="button" class="outline" id="admin-open">🔐 Admin / الإدارة</button>
 </header>
 <main>
+<section id="admin-login-panel" class="panel hidden"><h2>Administrator / دخول المدير</h2><p>Enter administrator password only / أدخل كلمة مرور المدير فقط</p><form id="admin-login-form"><label for="admin-password">Admin password / كلمة المرور</label><input id="admin-password" type="password" autocomplete="current-password" required><button class="primary" type="submit">Enter administration / دخول الإدارة</button></form><p id="admin-login-error" class="error" role="alert"></p></section>
 <section class="hero">
  <div><span class="eyebrow">SMART LEARNING • LOCAL SERVER</span><h1>Every great result starts with one step.</h1><p>Practice, improve, and celebrate your progress.</p></div>
  <div class="hero-symbol" aria-hidden="true">✦</div>
@@ -30,7 +31,8 @@
  <form id="register-form">
  <label for="reg-full-name">Full name / الاسم</label><input id="reg-full-name" name="full_name" required minlength="3" maxlength="120" autocomplete="name">
  <label for="reg-username">Username / اسم المستخدم</label><input id="reg-username" name="username" required minlength="3" maxlength="80" pattern="[A-Za-z0-9_.-]+" autocomplete="username">
- <label for="reg-grade">Grade / الصف</label><select id="reg-grade" name="grade" required><option value="">Select grade / اختر الصف</option><option>Primary 1</option><option>Primary 2</option><option>Primary 3</option><option>Primary 4</option><option>Primary 5</option><option>Primary 6</option><option>Preparatory 1</option><option>Preparatory 2</option><option>Preparatory 3</option><option>Secondary 1</option><option>Secondary 2</option><option>Secondary 3</option></select>
+ <label for="reg-stage">Stage / المرحلة</label><select id="reg-stage" name="stage" required><option value="">Select stage / اختر المرحلة</option><option value="Primary">Primary / ابتدائي</option><option value="Preparatory">Preparatory / إعدادي</option><option value="Secondary">Secondary / ثانوي</option></select>
+ <label for="reg-grade">Grade / الصف</label><select id="reg-grade" name="grade" required disabled><option value="">Select stage first / اختر المرحلة أولًا</option></select>
  <label for="reg-password">Password / كلمة المرور</label><input id="reg-password" name="password" type="password" required minlength="10" maxlength="128" autocomplete="new-password">
  <button class="primary" type="submit">Create account / إنشاء الحساب</button>
  </form><p id="register-status" role="status"></p></section>
