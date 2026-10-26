@@ -65,9 +65,9 @@ $('login-form').addEventListener('submit',async e=>{
   $('login-error').textContent='';
   const button=e.currentTarget.querySelector('button');button.disabled=true;
   try{
-    const me=await api('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:$('username').value,password:$('password').value})});
+    const me=await api('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:$('username').value.trim().replace(/\s+/g,'_'),password:$('password').value})});
     showDashboard(me);
-  }catch(error){$('login-error').textContent=error.message==='Invalid credentials'?'Incorrect username or password / اسم المستخدم أو كلمة المرور غير صحيحة':('Sign-in failed / تعذر الدخول: '+error.message);}
+  }catch(error){$('login-error').textContent=error.message==='Invalid credentials'?'Incorrect username or password / تأكد من اسم المستخدم وكلمة المرور. مثال: mahmoud_gamal':('Sign-in failed / تعذر الدخول: '+error.message);}
   finally{button.disabled=false;}
 });
 $('logout').addEventListener('click',async()=>{
