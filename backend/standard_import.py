@@ -29,7 +29,7 @@ def validate_bank(payload):
         image = q.get("image", "")
         if not isinstance(visual, str) or len(visual) > 32:
             raise ValueError(f"Question {i}: visual must be a short emoji or symbol")
-        if not isinstance(image, str) or (image and not re.fullmatch(r"/static/[A-Za-z0-9_./-]+\\.(?:png|jpg|jpeg|webp|svg)", image, flags=re.I)) or ".." in image:
+        if not isinstance(image, str) or (image and not re.fullmatch(r"/static/[A-Za-z0-9_./-]+\.(?:png|jpg|jpeg|webp|svg)", image, flags=re.I)) or ".." in image:
             raise ValueError(f"Question {i}: image must be a safe local /static/ image path")
         prompt = q["prompt"].strip()
         if visual:
