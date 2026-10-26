@@ -128,7 +128,7 @@ def create_student(payload: StudentCreate, user=Depends(admin_only)):
 @app.get("/api/students")
 def students(user=Depends(admin_only)):
     with db() as conn:
-        return [dict(x) for x in conn.execute("SELECT student_code,full_name,grade FROM students ORDER BY id DESC")]
+        return [dict(x) for x in conn.execute("SELECT s.student_code,s.full_name,s.grade,u.username FROM students s JOIN users u ON u.id=s.user_id ORDER BY s.id DESC")]
 
 @app.post("/api/results", status_code=201)
 def add_result(payload: ResultCreate, user=Depends(admin_only)):
