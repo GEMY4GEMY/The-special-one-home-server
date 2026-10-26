@@ -48,6 +48,17 @@ try {
   [System.IO.File]::WriteAllText($bankPath,$bank,[System.Text.Encoding]::UTF8)
   $import = Invoke-RestMethod 'http://127.0.0.1:19000/api/admin/question-bank/import' -Method Post -Form @{file=Get-Item $bankPath} -WebSession $admin
   if ($import.imported -ne 20) { throw 'Question import failed' }
+
+  $targetedBank = @{format='the-special-one-question-bank';version=1;questions=@(
+    @{grade='Primary 3';unit='Unit 1';lesson='Lesson 1';difficulty='easy';kind='choose';prompt='Targeted test question';answer='A';options=@('A','B')}
+  )} | ConvertTo-Json -Depth 8
+  $targetedPath = Join-Path $env:RUNNER_TEMP 'standard-targeted-bank.json'
+  [System.IO.File]::WriteAllText($targetedPath,$targetedBank,[System.Text.Encoding]::UTF8)
+  $targetedImport = Invoke-RestMethod 'http://127.0.0.1:19000/api/admin/question-bank/import' -Method Post -Form @{file=Get-Item $targetedPath;stage='Primary';grade='Primary 1'} -WebSession $admin
+  if ($targetedImport.imported -ne 1 -or $targetedImport.grade -ne 'Primary 1') { throw 'Targeted stage/grade import failed' }
+  $available = Invoke-RestMethod 'http://127.0.0.1:19000/api/admin/standard/filters' -WebSession $admin
+  if (-not @($available | Where-Object { $_.grade -eq 'Primary 1' -and $_.unit -eq 'Unit 1' -and $_.kind -eq 'choose' }).Count) { throw 'Targeted questions missing from exam builder filters' }
+
   $draftBody = @{title='Standard Release Smoke Test';grade='Primary 3';count=20} | ConvertTo-Json
   $draft = Invoke-RestMethod 'http://127.0.0.1:19000/api/admin/exam-drafts' -Method Post -Body $draftBody -ContentType 'application/json' -WebSession $admin
   $published = Invoke-RestMethod ("http://127.0.0.1:19000/api/standard/publish/"+$draft.id) -Method Post -WebSession $admin
