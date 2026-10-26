@@ -10,6 +10,15 @@ document.addEventListener("DOMContentLoaded",()=>{
     toggle.setAttribute("aria-expanded",String(open));
     if(open)document.getElementById("reg-full-name").focus();
   });
+  const stageField=document.getElementById("reg-stage");
+  const gradeField=document.getElementById("reg-grade");
+  stageField.addEventListener("change",()=>{
+    gradeField.replaceChildren(new Option("Select grade / اختر الصف",""));
+    const limits={Primary:6,Preparatory:3,Secondary:3};
+    const count=limits[stageField.value]||0;
+    gradeField.disabled=!count;
+    for(let i=1;i<=count;i++)gradeField.add(new Option(stageField.value+" "+i,stageField.value+" "+i));
+  });
   const usernameField=document.getElementById("reg-username");
   const normalizeUsername=value=>value.trim().replace(/\s+/g,"_");
   usernameField.addEventListener("blur",()=>{
