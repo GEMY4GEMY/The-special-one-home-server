@@ -30,7 +30,7 @@
  <h3>New student / طالب جديد</h3><p class="muted">Student accounts have learning access only. Administrator permissions are separate.</p>
  <form id="register-form">
  <label for="reg-full-name">Full name / الاسم</label><input id="reg-full-name" name="full_name" required minlength="3" maxlength="120" autocomplete="name">
- <label for="reg-username">Username / اسم المستخدم</label><input id="reg-username" name="username" required minlength="3" maxlength="80" pattern="[A-Za-z0-9_.-]+" autocomplete="username">
+ <label for="reg-username">Username / اسم المستخدم</label><input id="reg-username" name="username" required minlength="3" maxlength="80" pattern="[A-Za-z0-9_. -]+" autocomplete="username" placeholder="mahmoud_gamal">
  <label for="reg-stage">Stage / المرحلة</label><select id="reg-stage" name="stage" required><option value="">Select stage / اختر المرحلة</option><option value="Primary">Primary / ابتدائي</option><option value="Preparatory">Preparatory / إعدادي</option><option value="Secondary">Secondary / ثانوي</option></select>
  <label for="reg-grade">Grade / الصف</label><select id="reg-grade" name="grade" required disabled><option value="">Select stage first / اختر المرحلة أولًا</option></select>
  <label for="reg-password">Password / كلمة المرور</label><input id="reg-password" name="password" type="password" required minlength="10" maxlength="128" autocomplete="new-password">
