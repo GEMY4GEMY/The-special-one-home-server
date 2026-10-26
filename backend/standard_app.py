@@ -4,7 +4,7 @@ import secrets
 import sqlite3
 from pydantic import BaseModel, Field
 from backend.app import password_hash
-from fastapi import Depends, File, HTTPException, UploadFile
+from fastapi import Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from backend.app import FRONTEND
 from backend.app import app, admin_only, db, init_question_tables, ADMIN_USERNAME, password_hash as hasher, sessions
@@ -20,7 +20,7 @@ app.router.routes[:] = [
 ]
 
 @app.post("/api/admin/question-bank/import")
-async def import_question_bank(file: UploadFile = File(...), user=Depends(admin_only)):
+async def import_question_bank(file: UploadFile = File(...), stage: str | None = Form(None), grade: str | None = Form(None), user=Depends(admin_only)):
     if not file.filename or not file.filename.lower().endswith(".json"):
         raise HTTPException(400, "Upload a .json question bank")
     data = await file.read(3 * 1024 * 1024 + 1)
@@ -31,13 +31,19 @@ async def import_question_bank(file: UploadFile = File(...), user=Depends(admin_
         rows = validate_bank(json.loads(data.decode("utf-8-sig")))
     except (ValueError, UnicodeError, json.JSONDecodeError) as exc:
         raise HTTPException(422, str(exc))
+    if stage is not None or grade is not None:
+        allowed = {"Primary": 6, "Preparatory": 3, "Secondary": 3}
+        if stage not in allowed or grade not in [f"{stage} {i}" for i in range(1, allowed.get(stage, 0) + 1)]:
+            raise HTTPException(422, "Select a valid stage and grade for import")
+        # Assign all questions to the explicitly chosen class, regardless of file metadata.
+        rows = [(grade, *row[1:]) for row in rows]
     with db() as conn:
         init_question_tables(conn)
         conn.executemany(
             "INSERT INTO question_bank (grade,unit,lesson,difficulty,kind,prompt,answer,options) VALUES (?,?,?,?,?,?,?,?)",
             rows,
         )
-    return {"imported": len(rows), "status": "complete"}
+    return {"imported": len(rows), "grade": grade or "From JSON", "status": "complete"}
 
 
 class PublicStudentSignup(BaseModel):
