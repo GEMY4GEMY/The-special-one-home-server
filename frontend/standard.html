@@ -23,7 +23,7 @@
 <section class="panel" id="login-panel">
  <div class="panel-heading"><span class="round-icon">🔐</span><div><h2>Welcome back!</h2><p>Sign in to see your learning journey.</p></div></div>
  <form id="login-form">
-  <label for="username">Username</label><input id="username" name="username" autocomplete="username" required placeholder="Your student code or username">
+  <label for="username">Username / اسم المستخدم</label><small class="muted">Use your registered username (e.g. mahmoud_gamal), not your full name / استخدم اسم المستخدم المسجل وليس الاسم الكامل</small><input id="username" name="username" autocomplete="username" required placeholder="Your student code or username">
   <label for="password">Password</label><input id="password" name="password" type="password" autocomplete="current-password" required placeholder="Your password">
   <button class="primary" type="submit">Sign in <span aria-hidden="true">→</span></button>
  </form><p id="login-error" class="error" role="alert"></p>
@@ -58,7 +58,7 @@
 <button class="primary" type="submit">Save question +</button>
 </form><p id="question-message" role="status"></p>
 </div>
-<div class="panel admin-panel"><h3>Generate exam draft / إنشاء مسودة امتحان</h3>
+<div class="panel admin-panel hidden"><h3>Generate exam draft / إنشاء مسودة امتحان</h3>
 <form id="draft-form" class="admin-form">
 <label>Exam title<input name="title" id="draft-title" required placeholder="October Revision"></label>
 <label>Grade<input name="grade" id="draft-grade" required placeholder="Primary 3"></label>
