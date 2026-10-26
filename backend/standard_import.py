@@ -1,5 +1,6 @@
 """Validate offline question-bank JSON before writing any records."""
 import json
+import re
 
 FIELDS = ("grade", "unit", "lesson", "difficulty", "kind", "prompt", "answer")
 KINDS = {"choose", "fill", "rearrange", "letters"}
@@ -24,5 +25,16 @@ def validate_bank(payload):
             raise ValueError(f"Question {i}: invalid options")
         if q["kind"] == "choose" and (not 2 <= len(options) <= 5 or q["answer"] not in options):
             raise ValueError(f"Question {i}: answer missing from choices")
-        rows.append(tuple(q[k].strip() for k in FIELDS) + (json.dumps(options, ensure_ascii=False),))
+        visual = q.get("visual", "")
+        image = q.get("image", "")
+        if not isinstance(visual, str) or len(visual) > 32:
+            raise ValueError(f"Question {i}: visual must be a short emoji or symbol")
+        if not isinstance(image, str) or (image and not re.fullmatch(r"/static/[A-Za-z0-9_./-]+\\.(?:png|jpg|jpeg|webp|svg)", image, flags=re.I)) or ".." in image:
+            raise ValueError(f"Question {i}: image must be a safe local /static/ image path")
+        prompt = q["prompt"].strip()
+        if visual:
+            prompt = visual + "  " + prompt
+        if image:
+            prompt += "\\n[[image:" + image + "]]"
+        rows.append((q["grade"].strip(), q["unit"].strip(), q["lesson"].strip(), q["difficulty"].strip(), q["kind"].strip(), prompt, q["answer"].strip(), json.dumps(options, ensure_ascii=False)))
     return rows
