@@ -19,20 +19,24 @@ document.addEventListener("DOMContentLoaded",()=>{
     }}catch(e){drafts.textContent=e.message}
   };
   const panel=document.createElement("section");panel.className="panel";panel.id="standard-exams";
-  const heading=document.createElement("h3");heading.textContent="My published exams / امتحاناتي";
-  const load=document.createElement("button");load.className="primary";load.textContent="Load my exams";
+  const heading=document.createElement("h3");heading.textContent="Required exam / الامتحان المحدد من المدير";
+  const load=document.createElement("button");load.className="primary";load.textContent="Refresh assigned exam / تحديث الامتحان";
   const content=document.createElement("div");panel.append(heading,load,content);area.prepend(panel);
   document.addEventListener("tso:student-login",()=>load.click());
   if(!area.classList.contains('hidden'))queueMicrotask(()=>load.click());
   load.onclick=async()=>{
     content.replaceChildren();
-    try{const exams=await request("/api/standard/exams");if(!exams.length){content.textContent="No published exams for your grade yet.";return}
-      for(const exam of exams){const b=document.createElement("button");b.className="outline";b.textContent=exam.title+" ("+exam.question_count+" questions)";b.onclick=()=>start(exam.id);content.append(b)}
+    try{const exams=await request("/api/standard/exams");if(!exams.length){content.textContent="No required exam assigned to your grade yet / لم يحدد المدير امتحانًا لصفك بعد.";return}
+      const exam=exams[0];
+      const label=document.createElement("p");label.textContent="Assigned by your teacher / امتحان محدد من المدير: "+exam.title+" ("+exam.question_count+" questions)";
+      const b=document.createElement("button");b.className="primary";b.textContent="Start required exam / ابدأ الامتحان الإجباري";b.onclick=()=>start(exam.id);
+      content.append(label,b);
     }catch(e){content.textContent=e.message}
   };
   const practice=document.createElement("section");practice.className="panel";
   practice.innerHTML='<h3>Custom Practice / تدريب حسب اختيارك</h3><p>Choose units and question types from your own grade.</p><div id="std-practice-filters"></div><label>Questions <select id="std-practice-count"><option selected>20</option><option>40</option><option>60</option><option>80</option><option>100</option></select></label><button class="primary" id="std-practice-start">Start custom practice</button><p id="std-practice-status" role="status"></p>';
   area.prepend(practice);
+  practice.classList.add("hidden"); // Student practice is disabled: only the assigned official exam is available.
   const filterBox=practice.querySelector("#std-practice-filters"),practiceStatus=practice.querySelector("#std-practice-status");
   const selected=key=>[...filterBox.querySelectorAll('input[data-group="'+key+'"]:checked')].map(el=>el.value);
   async function loadPracticeFilters(){
