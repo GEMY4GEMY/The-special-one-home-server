@@ -17,11 +17,19 @@ try {
   $body = @{username='Mrsameh';password=$env:TSO_ADMIN_INITIAL_PASSWORD} | ConvertTo-Json
   $login = Invoke-RestMethod 'http://127.0.0.1:19000/api/login' -Method Post -ContentType 'application/json' -Body $body -WebSession $admin
   if ($login.role -ne 'admin') { throw 'Admin login failed' }
+  $passwordOnlySession = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+  $adminPasswordOnly = @{password=$env:TSO_ADMIN_INITIAL_PASSWORD} | ConvertTo-Json
+  $passwordOnlyIdentity = Invoke-RestMethod 'http://127.0.0.1:19000/api/standard/admin-login' -Method Post -ContentType 'application/json' -Body $adminPasswordOnly -WebSession $passwordOnlySession
+  if ($passwordOnlyIdentity.role -ne 'admin') { throw 'Password-only admin login failed' }
+  $badAdminPassword = $false
+  try { Invoke-RestMethod 'http://127.0.0.1:19000/api/standard/admin-login' -Method Post -ContentType 'application/json' -Body '{"password":"wrong-password"}' | Out-Null } catch { if ([int]$_.Exception.Response.StatusCode -eq 401) { $badAdminPassword = $true } }
+  if (-not $badAdminPassword) { throw 'Incorrect administrator password was accepted' }
+
   $initialVisibility = Invoke-RestMethod 'http://127.0.0.1:19000/api/admin/standard/visibility' -WebSession $admin
   if (@($initialVisibility).Count -ne 0) { throw 'Expected empty published exams on fresh database' }
-  $student = @{username='standard_test_student';password='StudentPassword123';student_code='ST-TEST-001';full_name='Test Student';grade='Primary 3'} | ConvertTo-Json
+  $student = @{username='standard_test_student';password='StudentPassword123';student_code='ST-TEST-001';full_name='Test Student';stage='Primary';grade='Primary 3'} | ConvertTo-Json
   Invoke-RestMethod 'http://127.0.0.1:19000/api/students' -Method Post -ContentType 'application/json' -Body $student -WebSession $admin | Out-Null
-  $publicSignup = @{username='public_signup_student';password='StudentPassword456';full_name='Public Signup Student';grade='Primary 4';role='admin'} | ConvertTo-Json
+  $publicSignup = @{username='public_signup_student';password='StudentPassword456';full_name='Public Signup Student';stage='Primary';grade='Primary 4';role='admin'} | ConvertTo-Json
   $registered = Invoke-RestMethod 'http://127.0.0.1:19000/api/standard/register' -Method Post -Body $publicSignup -ContentType 'application/json'
   if ($registered.role -ne 'student' -or -not $registered.student_code) { throw 'Public signup must create student role only' }
   $publicSession = New-Object Microsoft.PowerShell.Commands.WebRequestSession
