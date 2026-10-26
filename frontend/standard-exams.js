@@ -64,23 +64,65 @@ document.addEventListener("DOMContentLoaded",()=>{
   async function start(id){
     content.replaceChildren();
     try{
-      const exam=await request((id.startsWith("practice:")?"/api/standard/practice/":"/api/standard/exams/")+encodeURIComponent(id.replace(/^practice:/,"")));
-      const answers={};let index=0;const attemptId=(crypto.randomUUID?crypto.randomUUID():String(Date.now())+"-attempt");
+      const exam=await request("/api/standard/exams/"+encodeURIComponent(id));
+      const answers={};
+      const pageSize=6;
+      let page=0;
+      const attemptId=crypto.randomUUID?crypto.randomUUID():String(Date.now())+"-attempt";
+      const totalPages=Math.ceil(exam.questions.length/pageSize);
       const render=()=>{
         content.replaceChildren();
-        const q=exam.questions[index],title=document.createElement("h3");title.textContent="Question "+(index+1)+"/"+exam.questions.length+": "+q.prompt;content.append(title);
-        if(q.type==="choose"){for(const option of q.options){const b=document.createElement("button");b.className="outline";b.textContent=option;b.onclick=()=>{answers[q.id]=option;render()};if(answers[q.id]===option)b.setAttribute("aria-pressed","true");content.append(b)}}
-        else{const field=document.createElement("input");field.placeholder="Write your answer";field.value=answers[q.id]||"";field.oninput=()=>answers[q.id]=field.value;content.append(field)}
-        const nav=document.createElement("div");nav.className="exam-nav";
-        if(index>0){const prev=document.createElement("button");prev.textContent="Previous";prev.onclick=()=>{index--;render()};nav.append(prev)}
-        const next=document.createElement("button");next.className="primary";next.textContent=index===exam.questions.length-1?"Finish and see result":"Next";
-        next.onclick=async()=>{if(index<exam.questions.length-1){index++;render();return}
-          if(!confirm("Finish exam and submit your answers?"))return;
+        const paper=document.createElement("article");paper.className="tso-exam-paper";
+        const header=document.createElement("header");header.className="tso-paper-header";
+        const logo=document.createElement("div");logo.className="tso-paper-logo";logo.textContent="★ THE SPECIAL ONE";
+        const subtitle=document.createElement("div");subtitle.textContent="Sponsored by Mr. Sameh Abdel Hafeez";
+        const heading=document.createElement("h2");heading.textContent=exam.title;
+        const meta=document.createElement("div");meta.className="tso-paper-meta";meta.textContent="Official exam • Page "+(page+1)+" / "+totalPages+" • "+exam.questions.length+" questions";
+        header.append(logo,subtitle,heading,meta);paper.append(header);
+        const list=document.createElement("div");list.className="tso-paper-questions";
+        exam.questions.slice(page*pageSize,(page+1)*pageSize).forEach((q,i)=>{
+          const item=document.createElement("section");item.className="tso-paper-question";
+          const prompt=document.createElement("div");prompt.className="tso-paper-prompt";
+          const number=document.createElement("span");number.className="tso-question-number";number.textContent=String(page*pageSize+i+1);
+          const text=document.createElement("span");text.textContent=q.prompt;
+          prompt.append(number,text);item.append(prompt);
+          const choices=document.createElement("div");choices.className="tso-paper-choices";
+          if(q.type==="choose"){
+            q.options.forEach((option,n)=>{
+              const label=document.createElement("label");label.className="tso-paper-option";
+              const input=document.createElement("input");input.type="radio";input.name="answer-"+q.id;input.value=option;input.checked=answers[q.id]===option;
+              input.onchange=()=>{answers[q.id]=option};
+              const letter=document.createElement("strong");letter.textContent=String.fromCharCode(65+n)+".";
+              const span=document.createElement("span");span.textContent=option;
+              label.append(input,letter,span);choices.append(label);
+            });
+          }else{
+            const field=document.createElement("input");field.type="text";field.className="tso-written-answer";field.placeholder=q.type==="rearrange"?"Write the correct sentence / رتب الجملة":"Write your answer / اكتب الإجابة";field.value=answers[q.id]||"";
+            field.oninput=()=>{answers[q.id]=field.value};choices.append(field);
+          }
+          item.append(choices);list.append(item);
+        });
+        paper.append(list);
+        const footer=document.createElement("footer");footer.className="tso-paper-footer";footer.textContent="Do your best! 🌟  •  THE SPECIAL ONE";paper.append(footer);
+        content.append(paper);
+        const nav=document.createElement("nav");nav.className="tso-paper-nav";
+        const indicator=document.createElement("span");indicator.textContent="Page "+(page+1)+" of "+totalPages+" • Answered "+Object.keys(answers).filter(k=>answers[k]?.trim()).length+"/"+exam.questions.length;
+        const previous=document.createElement("button");previous.className="outline";previous.textContent="← Previous page";previous.disabled=page===0;previous.onclick=()=>{page--;render();paper.scrollIntoView({behavior:"smooth",block:"start"})};
+        const next=document.createElement("button");next.className="primary";next.textContent=page===totalPages-1?"Finish exam / إنهاء الامتحان":"Next page →";
+        next.onclick=async()=>{
+          if(page<totalPages-1){page++;render();content.scrollIntoView({behavior:"smooth",block:"start"});return}
+          if(!confirm("Finish and submit your exam? / هل تريد إنهاء الامتحان وتسليمه؟"))return;
           next.disabled=true;
-          try{const result=await request((id.startsWith("practice:")?"/api/standard/practice/":"/api/standard/exams/")+encodeURIComponent(id.replace(/^practice:/,""))+"/submit",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({attempt_id:attemptId,answers})});content.textContent="Your result: "+result.score+" / "+result.maximum; if(typeof loadResults==="function")loadResults();}
-          catch(e){next.disabled=false;alert(e.message)}
-        };nav.append(next);content.append(nav);
-      };render();
+          try{
+            const result=await request("/api/standard/exams/"+encodeURIComponent(id)+"/submit",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({attempt_id:attemptId,answers})});
+            content.replaceChildren();
+            const score=document.createElement("section");score.className="tso-exam-result";score.textContent="🌟 Your result / نتيجتك: "+result.score+" / "+result.maximum;content.append(score);
+            if(typeof loadResults==="function")loadResults();
+          }catch(e){next.disabled=false;alert(e.message)}
+        };
+        nav.append(previous,indicator,next);content.append(nav);
+      };
+      render();
     }catch(e){content.textContent=e.message}
   }
 });
