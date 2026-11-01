@@ -64,12 +64,16 @@ def load_exam(conn, exam_id, user):
     grade = conn.execute("SELECT grade FROM students WHERE user_id=?", (user["id"],)).fetchone()
     if not row or not grade or grade["grade"] != row["grade"]:
         raise HTTPException(404, "Exam not available")
+    if row["question_snapshot"]:
+        return row, json.loads(row["question_snapshot"])
     ids = json.loads(row["question_ids"])
     questions = conn.execute("SELECT * FROM question_bank WHERE id IN (" + ",".join("?" for _ in ids) + ")", ids).fetchall()
-    by_id = {str(q["id"]):q for q in questions}
+    by_id = {str(q["id"]):dict(q) for q in questions}
     if len(by_id) != len(ids):
         raise HTTPException(409, "Exam questions unavailable")
-    return row, [by_id[str(i)] for i in ids]
+    ordered = [by_id[str(i)] for i in ids]
+    conn.execute("UPDATE standard_publications SET question_snapshot=? WHERE id=? AND question_snapshot IS NULL", (json.dumps(ordered), exam_id))
+    return row, ordered
 
 @app.get("/api/standard/exams/{exam_id}")
 def exam_detail(exam_id: str, user=Depends(current_user)):
