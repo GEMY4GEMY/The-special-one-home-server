@@ -71,7 +71,7 @@ def published_exams(user=Depends(current_user)):
         return [{"id":r["id"],"title":r["title"],"question_count":len(json.loads(r["question_ids"]))} for r in rows]
 
 def load_exam(conn, exam_id, user):
-    row = conn.execute("SELECT d.title,d.grade,d.question_ids,p.question_snapshot FROM standard_publications p JOIN exam_drafts d ON d.id=p.draft_id JOIN standard_visibility v ON v.publication_id=p.id AND v.active=1 WHERE p.id=?", (exam_id,)).fetchone()
+    row = conn.execute("SELECT d.title,d.grade,d.question_ids,p.question_snapshot FROM standard_publications p JOIN exam_drafts d ON d.id=p.draft_id WHERE p.id=?", (exam_id,)).fetchone()
     grade = conn.execute("SELECT grade FROM students WHERE user_id=?", (user["id"],)).fetchone()
     if not row or not grade or grade["grade"] != row["grade"]:
         raise HTTPException(404, "Exam not available")
@@ -91,6 +91,9 @@ def exam_detail(exam_id: str, user=Depends(current_user)):
     student(user)
     with db() as conn:
         init(conn)
+        visible = conn.execute("SELECT active FROM standard_visibility WHERE publication_id=?", (exam_id,)).fetchone()
+        if not visible or not visible["active"]:
+            raise HTTPException(404, "Exam is no longer available for new sessions")
         row, questions = load_exam(conn,exam_id,user)
         return {"id":exam_id,"title":row["title"],"questions":[{"id":str(q["id"]),"type":q["kind"],"prompt":q["prompt"],"options":json.loads(q["options"] or "[]")} for q in questions]}
 
