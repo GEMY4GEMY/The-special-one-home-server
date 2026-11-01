@@ -18,6 +18,7 @@ def init(conn):
     if "question_snapshot" not in columns:
         conn.execute("ALTER TABLE standard_publications ADD COLUMN question_snapshot TEXT")
     conn.execute("CREATE TABLE IF NOT EXISTS standard_visibility (publication_id TEXT PRIMARY KEY, active INTEGER NOT NULL DEFAULT 0)")
+    conn.execute("CREATE TABLE IF NOT EXISTS standard_progress (student_id INTEGER NOT NULL, publication_id TEXT NOT NULL, attempt_id TEXT NOT NULL, answers TEXT NOT NULL, page INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL, PRIMARY KEY(student_id,publication_id))")
     conn.execute("CREATE TABLE IF NOT EXISTS standard_attempts (id INTEGER PRIMARY KEY, student_id INTEGER NOT NULL, publication_id TEXT NOT NULL, attempt_id TEXT NOT NULL, score INTEGER NOT NULL, maximum INTEGER NOT NULL, submitted_at TEXT NOT NULL, UNIQUE(student_id,attempt_id))")
 
 def snapshot_questions(conn, ids):
@@ -85,6 +86,37 @@ def load_exam(conn, exam_id, user):
     ordered = [by_id[str(i)] for i in ids]
     conn.execute("UPDATE standard_publications SET question_snapshot=? WHERE id=? AND question_snapshot IS NULL", (json.dumps(ordered), exam_id))
     return row, ordered
+
+class ProgressPayload(BaseModel):
+    attempt_id: str
+    answers: dict[str, str]
+    page: int = 0
+
+
+@app.get("/api/standard/exams/{exam_id}/progress")
+def get_progress(exam_id: str, user=Depends(current_user)):
+    student(user)
+    with db() as conn:
+        init(conn)
+        load_exam(conn, exam_id, user)
+        row = conn.execute("SELECT attempt_id,answers,page FROM standard_progress WHERE student_id=? AND publication_id=?", (user["id"],exam_id)).fetchone()
+        return {"attemptId":row["attempt_id"],"answers":json.loads(row["answers"]),"page":row["page"]} if row else None
+
+
+@app.put("/api/standard/exams/{exam_id}/progress")
+def save_progress(exam_id: str, payload: ProgressPayload, user=Depends(current_user)):
+    student(user)
+    if not 8 <= len(payload.attempt_id) <= 100 or not 0 <= payload.page <= 100:
+        raise HTTPException(422, "Invalid progress")
+    with db() as conn:
+        init(conn)
+        _, questions = load_exam(conn,exam_id,user)
+        allowed = {str(q["id"]) for q in questions}
+        if not set(payload.answers).issubset(allowed) or any(not isinstance(v,str) or len(v)>500 for v in payload.answers.values()):
+            raise HTTPException(422, "Invalid answers")
+        conn.execute("INSERT INTO standard_progress(student_id,publication_id,attempt_id,answers,page,updated_at) VALUES (?,?,?,?,?,?) ON CONFLICT(student_id,publication_id) DO UPDATE SET attempt_id=excluded.attempt_id,answers=excluded.answers,page=excluded.page,updated_at=excluded.updated_at", (user["id"],exam_id,payload.attempt_id,json.dumps(payload.answers),payload.page,datetime.now(timezone.utc).isoformat()))
+    return {"saved":True}
+
 
 @app.get("/api/standard/exams/{exam_id}")
 def exam_detail(exam_id: str, user=Depends(current_user)):
