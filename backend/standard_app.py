@@ -72,6 +72,24 @@ def list_import_batches(user=Depends(admin_only)):
 
 
 
+@app.delete("/api/admin/standard/import-batches/{batch_id}")
+def delete_import_batch(batch_id: str, user=Depends(admin_only)):
+    """Delete one imported file's questions, but never silently break existing exams."""
+    with db() as conn:
+        init_import_batches(conn)
+        batch = conn.execute("SELECT id FROM standard_import_batches WHERE id=?", (batch_id,)).fetchone()
+        if not batch:
+            raise HTTPException(404, "Imported file not found")
+        ids = {row["id"] for row in conn.execute("SELECT id FROM question_bank WHERE import_batch_id=?", (batch_id,))}
+        if ids:
+            for draft in conn.execute("SELECT question_ids FROM exam_drafts"):
+                if ids.intersection(json.loads(draft["question_ids"])):
+                    raise HTTPException(409, "This file contains questions used by an exam. Remove or replace the exam before deleting the file.")
+        conn.execute("DELETE FROM question_bank WHERE import_batch_id=?", (batch_id,))
+        conn.execute("DELETE FROM standard_import_batches WHERE id=?", (batch_id,))
+    return {"deleted_questions": len(ids), "deleted_batch_id": batch_id}
+
+
 class PublicStudentSignup(BaseModel):
     full_name: str = Field(min_length=3, max_length=120)
     username: str = Field(min_length=3, max_length=80, pattern=r"^[A-Za-z0-9_.-]+$")
