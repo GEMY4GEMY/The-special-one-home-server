@@ -172,6 +172,10 @@ def submit(exam_id: str, payload: Submission, user=Depends(current_user)):
             if previous["publication_id"] != exam_id:
                 raise HTTPException(409, "Attempt ID belongs to another exam")
             return {"score":previous["score"],"maximum":previous["maximum"],"already_submitted":True}
+        visibility=conn.execute("SELECT active FROM standard_visibility WHERE publication_id=?", (exam_id,)).fetchone()
+        progress=conn.execute("SELECT attempt_id FROM standard_progress WHERE student_id=? AND publication_id=?", (user["id"],exam_id)).fetchone()
+        if (not visibility or not visibility["active"]) and (not progress or progress["attempt_id"] != payload.attempt_id):
+            raise HTTPException(403, "Cannot submit an unpublished exam without a started attempt")
         score = sum(normalize(payload.answers.get(str(q["id"]),""))==normalize(q["answer"]) for q in questions)
         conn.execute("INSERT INTO standard_attempts(student_id,publication_id,attempt_id,score,maximum,submitted_at) VALUES (?,?,?,?,?,?)", (user["id"],exam_id,payload.attempt_id,score,len(questions),datetime.now(timezone.utc).isoformat()))
         conn.execute("DELETE FROM standard_progress WHERE student_id=? AND publication_id=?", (user["id"],exam_id))
