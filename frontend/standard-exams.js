@@ -53,11 +53,22 @@ document.addEventListener("DOMContentLoaded",()=>{
       const storageKey="tso-exam-progress:"+id;
       let saved=null;
       try{saved=JSON.parse(sessionStorage.getItem(storageKey)||"null")}catch(_){}
+      try{
+        const remote=await request("/api/standard/exams/"+encodeURIComponent(id)+"/progress");
+        if(remote&&remote.attemptId&&(!saved||Object.keys(remote.answers||{}).length>Object.keys(saved.answers||{}).length))saved=remote;
+      }catch(error){console.warn("Server progress unavailable; using local recovery",error)}
       const answers=saved&&typeof saved.answers==="object"&&saved.answers? saved.answers:{};
       const pageSize=6;
       let page=Number.isInteger(saved?.page)?Math.max(0,saved.page):0;
       const attemptId=saved?.attemptId||(crypto.randomUUID?crypto.randomUUID():String(Date.now())+"-attempt");
-      const saveProgress=()=>{try{sessionStorage.setItem(storageKey,JSON.stringify({answers,page,attemptId}))}catch(_){}};
+      let saveTimer=null;
+      const saveProgress=()=>{
+        try{sessionStorage.setItem(storageKey,JSON.stringify({answers,page,attemptId}))}catch(_){}
+        clearTimeout(saveTimer);
+        saveTimer=setTimeout(()=>{
+          request("/api/standard/exams/"+encodeURIComponent(id)+"/progress",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({attempt_id:attemptId,answers,page})}).catch(error=>console.warn("Progress will retry on next change",error));
+        },700);
+      };
       window.addEventListener("pagehide",saveProgress,{once:true});
       const totalPages=Math.ceil(exam.questions.length/pageSize);
       if(saved){const resumed=document.createElement("p");resumed.className="muted";resumed.textContent="Your saved answers were restored / تم استرجاع إجاباتك المحفوظة";content.append(resumed)}
