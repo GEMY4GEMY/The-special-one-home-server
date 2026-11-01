@@ -160,6 +160,10 @@ def submit(exam_id: str, payload: Submission, user=Depends(current_user)):
     with db() as conn:
         init(conn)
         row, questions = load_exam(conn,exam_id,user)
+        visibility=conn.execute("SELECT active FROM standard_visibility WHERE publication_id=?", (exam_id,)).fetchone()
+        existing=conn.execute("SELECT attempt_id FROM standard_progress WHERE student_id=? AND publication_id=?", (user["id"],exam_id)).fetchone()
+        if (not visibility or not visibility["active"]) and (not existing or existing["attempt_id"] != payload.attempt_id):
+            raise HTTPException(403, "Only an already-started exam may be saved")
         allowed = {str(q["id"]) for q in questions}
         if not set(payload.answers).issubset(allowed) or any(not isinstance(v,str) or len(v)>500 for v in payload.answers.values()):
             raise HTTPException(422, "Invalid answers")
