@@ -14,6 +14,9 @@ class Submission(BaseModel):
 def init(conn):
     init_question_tables(conn)
     conn.execute("CREATE TABLE IF NOT EXISTS standard_publications (id TEXT PRIMARY KEY, draft_id TEXT UNIQUE NOT NULL, published_at TEXT NOT NULL)")
+    columns = {r["name"] for r in conn.execute("PRAGMA table_info(standard_publications)")}
+    if "question_snapshot" not in columns:
+        conn.execute("ALTER TABLE standard_publications ADD COLUMN question_snapshot TEXT")
     conn.execute("CREATE TABLE IF NOT EXISTS standard_visibility (publication_id TEXT PRIMARY KEY, active INTEGER NOT NULL DEFAULT 0)")
     conn.execute("CREATE TABLE IF NOT EXISTS standard_attempts (id INTEGER PRIMARY KEY, student_id INTEGER NOT NULL, publication_id TEXT NOT NULL, attempt_id TEXT NOT NULL, score INTEGER NOT NULL, maximum INTEGER NOT NULL, submitted_at TEXT NOT NULL, UNIQUE(student_id,attempt_id))")
 
@@ -42,7 +45,7 @@ def publish(draft_id: str, user=Depends(admin_only)):
         if prior:
             return {"id": prior["id"], "published": True}
         publication_id = secrets.token_urlsafe(18)
-        conn.execute("INSERT INTO standard_publications VALUES (?,?,?)", (publication_id,draft_id,datetime.now(timezone.utc).isoformat()))
+        conn.execute("INSERT INTO standard_publications(id,draft_id,published_at) VALUES (?,?,?)", (publication_id,draft_id,datetime.now(timezone.utc).isoformat()))
     return {"id": publication_id, "published": True}
 
 @app.get("/api/standard/exams")
@@ -57,7 +60,7 @@ def published_exams(user=Depends(current_user)):
         return [{"id":r["id"],"title":r["title"],"question_count":len(json.loads(r["question_ids"]))} for r in rows]
 
 def load_exam(conn, exam_id, user):
-    row = conn.execute("SELECT d.title,d.grade,d.question_ids FROM standard_publications p JOIN exam_drafts d ON d.id=p.draft_id JOIN standard_visibility v ON v.publication_id=p.id AND v.active=1 WHERE p.id=?", (exam_id,)).fetchone()
+    row = conn.execute("SELECT d.title,d.grade,d.question_ids,p.question_snapshot FROM standard_publications p JOIN exam_drafts d ON d.id=p.draft_id JOIN standard_visibility v ON v.publication_id=p.id AND v.active=1 WHERE p.id=?", (exam_id,)).fetchone()
     grade = conn.execute("SELECT grade FROM students WHERE user_id=?", (user["id"],)).fetchone()
     if not row or not grade or grade["grade"] != row["grade"]:
         raise HTTPException(404, "Exam not available")
