@@ -111,6 +111,45 @@ def download_standard_backup(user=Depends(admin_only)):
     )
 
 
+@app.post("/api/admin/standard/restore")
+async def restore_standard_backup(file: UploadFile = File(...), user=Depends(admin_only)):
+    """Restore a validated SQLite backup; invalidate login sessions afterward."""
+    max_bytes = 50 * 1024 * 1024
+    if not file.filename or not file.filename.lower().endswith((".sqlite3", ".db")):
+        raise HTTPException(400, "Choose a .sqlite3 backup file")
+    content = await file.read(max_bytes + 1)
+    if len(content) > max_bytes:
+        raise HTTPException(413, "Backup exceeds 50 MB")
+    if not content.startswith(b"SQLite format 3\\x00"):
+        raise HTTPException(422, "Not a SQLite database")
+    with tempfile.TemporaryDirectory(prefix="tso-restore-") as directory:
+        incoming = Path(directory) / "incoming.sqlite3"
+        incoming.write_bytes(content)
+        try:
+            with sqlite3.connect(f"file:{incoming}?mode=ro", uri=True) as source:
+                if source.execute("PRAGMA integrity_check").fetchone()[0] != "ok":
+                    raise HTTPException(422, "SQLite integrity check failed")
+                tables = {row[0] for row in source.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+                required = {"users", "students", "question_bank", "exam_drafts"}
+                if not required.issubset(tables):
+                    raise HTTPException(422, "Backup is missing required application tables")
+                admins = source.execute("SELECT COUNT(*) FROM users WHERE role='admin'").fetchone()[0]
+                if admins < 1:
+                    raise HTTPException(422, "Backup has no administrator account")
+                # Make a recoverable copy of the current database before replacement.
+                stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+                safety = DB_PATH.parent / f"pre_restore_{stamp}.sqlite3"
+                DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+                with sqlite3.connect(str(DB_PATH), timeout=30) as live:
+                    with sqlite3.connect(str(safety)) as old:
+                        live.backup(old)
+                    source.backup(live)
+        except sqlite3.DatabaseError as exc:
+            raise HTTPException(422, f"Invalid backup database: {exc}")
+    sessions.clear()
+    return {"restored": True, "login_required": True, "safety_backup": safety.name}
+
+
 class PublicStudentSignup(BaseModel):
     full_name: str = Field(min_length=3, max_length=120)
     username: str = Field(min_length=3, max_length=80, pattern=r"^[A-Za-z0-9_.-]+$")
