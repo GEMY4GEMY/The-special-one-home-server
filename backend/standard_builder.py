@@ -74,6 +74,51 @@ def set_visibility(publication_id:str,state:str,user=Depends(admin_only)):
         conn.execute("INSERT INTO standard_visibility(publication_id,active) VALUES (?,?) ON CONFLICT(publication_id) DO UPDATE SET active=excluded.active",(publication_id,int(state=="show")))
         return {"id":publication_id,"active":state=="show","grade":row["grade"]}
 
+class RepublishRequest(BaseModel):
+    title: str = Field(min_length=3, max_length=150)
+
+
+@app.post("/api/admin/standard/exams/{publication_id}/republish")
+def republish_exam(publication_id: str, payload: RepublishRequest, user=Depends(admin_only)):
+    """Create a new immutable publication; old attempts and exam version remain intact."""
+    with db() as conn:
+        init_standard_exams(conn)
+        init_visibility(conn)
+        old = conn.execute(
+            "SELECT d.grade,d.question_ids FROM standard_publications p "
+            "JOIN exam_drafts d ON d.id=p.draft_id WHERE p.id=?",
+            (publication_id,),
+        ).fetchone()
+        if not old:
+            raise HTTPException(404, "Published exam not found")
+        ids = json.loads(old["question_ids"])
+        if not ids:
+            raise HTTPException(409, "Exam has no questions")
+        marks = ",".join("?" for _ in ids)
+        available = conn.execute(
+            f"SELECT COUNT(*) FROM question_bank WHERE id IN ({marks})", ids
+        ).fetchone()[0]
+        if available != len(ids):
+            raise HTTPException(409, "Some questions are missing; create a replacement exam from the question bank")
+        draft_id = secrets.token_urlsafe(18)
+        new_id = secrets.token_urlsafe(18)
+        conn.execute(
+            "INSERT INTO exam_drafts(id,title,grade,question_ids) VALUES (?,?,?,?)",
+            (draft_id, payload.title.strip(), old["grade"], old["question_ids"]),
+        )
+        conn.execute(
+            "INSERT INTO standard_publications(id,draft_id,published_at) VALUES (?,?,?)",
+            (new_id, draft_id, datetime.now(timezone.utc).isoformat()),
+        )
+        conn.execute(
+            "UPDATE standard_visibility SET active=0 WHERE publication_id IN "
+            "(SELECT p.id FROM standard_publications p JOIN exam_drafts d ON d.id=p.draft_id WHERE d.grade=?)",
+            (old["grade"],),
+        )
+        conn.execute("INSERT INTO standard_visibility(publication_id,active) VALUES (?,1)", (new_id,))
+    return {"id":new_id,"previous_id":publication_id,"grade":old["grade"],"question_count":len(ids),"active":True}
+
+
 @app.delete("/api/admin/standard/exams/{publication_id}")
 def delete_published_exam(publication_id: str, user=Depends(admin_only)):
     """Delete unused exams; archive exams with recorded attempts to preserve history."""
