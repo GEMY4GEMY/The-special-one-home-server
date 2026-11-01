@@ -5,7 +5,7 @@ from fastapi import Depends, HTTPException
 from pydantic import BaseModel, Field
 from backend.app import app, db, admin_only, init_question_tables
 from backend.question_selection import choose_questions
-from backend.standard_exams import init as init_standard_exams
+from backend.standard_exams import init as init_standard_exams, snapshot_questions
 from datetime import datetime, timezone
 
 KINDS={"choose","fill","rearrange","letters"}
@@ -107,8 +107,8 @@ def republish_exam(publication_id: str, payload: RepublishRequest, user=Depends(
             (draft_id, payload.title.strip(), old["grade"], old["question_ids"]),
         )
         conn.execute(
-            "INSERT INTO standard_publications(id,draft_id,published_at) VALUES (?,?,?)",
-            (new_id, draft_id, datetime.now(timezone.utc).isoformat()),
+            "INSERT INTO standard_publications(id,draft_id,published_at,question_snapshot) VALUES (?,?,?,?)",
+            (new_id, draft_id, datetime.now(timezone.utc).isoformat(), snapshot_questions(conn, ids)),
         )
         conn.execute(
             "UPDATE standard_visibility SET active=0 WHERE publication_id IN "
@@ -167,7 +167,7 @@ def create_and_show(payload: BuildRequest, user=Depends(admin_only)):
         draft_id=secrets.token_urlsafe(18)
         publication_id=secrets.token_urlsafe(18)
         conn.execute("INSERT INTO exam_drafts(id,title,grade,question_ids) VALUES (?,?,?,?)",(draft_id,payload.title,payload.grade,json.dumps(selected)))
-        conn.execute("INSERT INTO standard_publications(id,draft_id,published_at) VALUES (?,?,?)",(publication_id,draft_id,datetime.now(timezone.utc).isoformat()))
+        conn.execute("INSERT INTO standard_publications(id,draft_id,published_at,question_snapshot) VALUES (?,?,?,?)",(publication_id,draft_id,datetime.now(timezone.utc).isoformat(),snapshot_questions(conn,selected)))
         conn.execute("UPDATE standard_visibility SET active=0 WHERE publication_id IN (SELECT p.id FROM standard_publications p JOIN exam_drafts d ON d.id=p.draft_id WHERE d.grade=?)",(payload.grade,))
         conn.execute("INSERT INTO standard_visibility(publication_id,active) VALUES (?,1)",(publication_id,))
     return {"id":publication_id,"grade":payload.grade,"question_count":len(selected),"active":True,"status":"published"}
