@@ -74,6 +74,25 @@ def set_visibility(publication_id:str,state:str,user=Depends(admin_only)):
         conn.execute("INSERT INTO standard_visibility(publication_id,active) VALUES (?,?) ON CONFLICT(publication_id) DO UPDATE SET active=excluded.active",(publication_id,int(state=="show")))
         return {"id":publication_id,"active":state=="show","grade":row["grade"]}
 
+@app.delete("/api/admin/standard/exams/{publication_id}")
+def delete_published_exam(publication_id: str, user=Depends(admin_only)):
+    """Delete unused exams; archive exams with recorded attempts to preserve history."""
+    with db() as conn:
+        init_standard_exams(conn)
+        init_visibility(conn)
+        publication = conn.execute("SELECT draft_id FROM standard_publications WHERE id=?", (publication_id,)).fetchone()
+        if not publication:
+            raise HTTPException(404, "Published exam not found")
+        attempts = conn.execute("SELECT COUNT(*) FROM standard_attempts WHERE publication_id=?", (publication_id,)).fetchone()[0]
+        if attempts:
+            conn.execute("INSERT INTO standard_visibility(publication_id,active) VALUES (?,0) ON CONFLICT(publication_id) DO UPDATE SET active=0", (publication_id,))
+            return {"status":"archived","attempts_preserved":attempts,"id":publication_id}
+        conn.execute("DELETE FROM standard_visibility WHERE publication_id=?", (publication_id,))
+        conn.execute("DELETE FROM standard_publications WHERE id=?", (publication_id,))
+        conn.execute("DELETE FROM exam_drafts WHERE id=?", (publication["draft_id"],))
+    return {"status":"deleted","id":publication_id}
+
+
 class DeleteQuestionsRequest(BaseModel):
     scope: str
     stage: str | None = None
