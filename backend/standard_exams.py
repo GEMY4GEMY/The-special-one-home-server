@@ -71,6 +71,26 @@ def published_exams(user=Depends(current_user)):
         rows = conn.execute("SELECT p.id,d.title,d.grade,d.question_ids FROM standard_publications p JOIN exam_drafts d ON d.id=p.draft_id JOIN standard_visibility v ON v.publication_id=p.id AND v.active=1 WHERE d.grade=? ORDER BY p.published_at DESC LIMIT 1", (grade["grade"],)).fetchall()
         return [{"id":r["id"],"title":r["title"],"question_count":len(json.loads(r["question_ids"]))} for r in rows]
 
+@app.get("/api/standard/resumable-exams")
+def resumable_exams(user=Depends(current_user)):
+    student(user)
+    with db() as conn:
+        init(conn)
+        grade=conn.execute("SELECT grade FROM students WHERE user_id=?", (user["id"],)).fetchone()
+        if not grade:
+            return []
+        rows=conn.execute(
+            "SELECT p.id,d.title,sp.updated_at FROM standard_progress sp "
+            "JOIN standard_publications p ON p.id=sp.publication_id "
+            "JOIN exam_drafts d ON d.id=p.draft_id "
+            "WHERE sp.student_id=? AND d.grade=? AND NOT EXISTS "
+            "(SELECT 1 FROM standard_attempts a WHERE a.student_id=sp.student_id "
+            "AND a.publication_id=sp.publication_id AND a.attempt_id=sp.attempt_id) "
+            "ORDER BY sp.updated_at DESC", (user["id"],grade["grade"])
+        ).fetchall()
+        return [dict(row) for row in rows]
+
+
 def load_exam(conn, exam_id, user):
     row = conn.execute("SELECT d.title,d.grade,d.question_ids,p.question_snapshot FROM standard_publications p JOIN exam_drafts d ON d.id=p.draft_id WHERE p.id=?", (exam_id,)).fetchone()
     grade = conn.execute("SELECT grade FROM students WHERE user_id=?", (user["id"],)).fetchone()
@@ -114,6 +134,8 @@ def save_progress(exam_id: str, payload: ProgressPayload, user=Depends(current_u
         allowed = {str(q["id"]) for q in questions}
         if not set(payload.answers).issubset(allowed) or any(not isinstance(v,str) or len(v)>500 for v in payload.answers.values()):
             raise HTTPException(422, "Invalid answers")
+        if conn.execute("SELECT 1 FROM standard_attempts WHERE student_id=? AND publication_id=? AND attempt_id=?", (user["id"],exam_id,payload.attempt_id)).fetchone():
+            raise HTTPException(409, "This attempt has already been submitted")
         conn.execute("INSERT INTO standard_progress(student_id,publication_id,attempt_id,answers,page,updated_at) VALUES (?,?,?,?,?,?) ON CONFLICT(student_id,publication_id) DO UPDATE SET attempt_id=excluded.attempt_id,answers=excluded.answers,page=excluded.page,updated_at=excluded.updated_at", (user["id"],exam_id,payload.attempt_id,json.dumps(payload.answers),payload.page,datetime.now(timezone.utc).isoformat()))
     return {"saved":True}
 
@@ -124,7 +146,8 @@ def exam_detail(exam_id: str, user=Depends(current_user)):
     with db() as conn:
         init(conn)
         visible = conn.execute("SELECT active FROM standard_visibility WHERE publication_id=?", (exam_id,)).fetchone()
-        if not visible or not visible["active"]:
+        progress=conn.execute("SELECT 1 FROM standard_progress WHERE student_id=? AND publication_id=?", (user["id"],exam_id)).fetchone()
+        if (not visible or not visible["active"]) and not progress:
             raise HTTPException(404, "Exam is no longer available for new sessions")
         row, questions = load_exam(conn,exam_id,user)
         return {"id":exam_id,"title":row["title"],"questions":[{"id":str(q["id"]),"type":q["kind"],"prompt":q["prompt"],"options":json.loads(q["options"] or "[]")} for q in questions]}
@@ -147,6 +170,7 @@ def submit(exam_id: str, payload: Submission, user=Depends(current_user)):
             return {"score":previous["score"],"maximum":previous["maximum"],"already_submitted":True}
         score = sum(normalize(payload.answers.get(str(q["id"]),""))==normalize(q["answer"]) for q in questions)
         conn.execute("INSERT INTO standard_attempts(student_id,publication_id,attempt_id,score,maximum,submitted_at) VALUES (?,?,?,?,?,?)", (user["id"],exam_id,payload.attempt_id,score,len(questions),datetime.now(timezone.utc).isoformat()))
+        conn.execute("DELETE FROM standard_progress WHERE student_id=? AND publication_id=?", (user["id"],exam_id))
         return {"score":score,"maximum":len(questions),"already_submitted":False}
 
 @app.get("/api/standard/my-attempts")
