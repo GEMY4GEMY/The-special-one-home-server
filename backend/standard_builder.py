@@ -188,7 +188,8 @@ def delete_questions(payload: DeleteQuestionsRequest, user=Depends(admin_only)):
         init_standard_exams(conn)
         init_visibility(conn)
         count=conn.execute("SELECT COUNT(*) FROM question_bank WHERE "+where,params).fetchone()[0]
-        # Remove exams that reference deleted questions, preserving historical student scores.
+        # Keep published exams and their draft metadata: published question snapshots
+        # remain valid even when the source question bank is cleared.
         ids={r[0] for r in conn.execute("SELECT id FROM question_bank WHERE "+where,params)}
         affected=[]
         for d in conn.execute("SELECT id,question_ids FROM exam_drafts"):
@@ -196,11 +197,14 @@ def delete_questions(payload: DeleteQuestionsRequest, user=Depends(admin_only)):
                 affected.append(d["id"])
         if affected:
             marks=",".join("?" for _ in affected)
-            publications=[r[0] for r in conn.execute(f"SELECT id FROM standard_publications WHERE draft_id IN ({marks})",affected)]
-            if publications:
-                pubmarks=",".join("?" for _ in publications)
-                conn.execute(f"DELETE FROM standard_visibility WHERE publication_id IN ({pubmarks})",publications)
-                conn.execute(f"DELETE FROM standard_publications WHERE id IN ({pubmarks})",publications)
-            conn.execute(f"DELETE FROM exam_drafts WHERE id IN ({marks})",affected)
+            published={r[0] for r in conn.execute(f"SELECT draft_id FROM standard_publications WHERE draft_id IN ({marks})",affected)}
+            for draft_id in published:
+                row=conn.execute("SELECT p.id,p.question_snapshot,d.question_ids FROM standard_publications p JOIN exam_drafts d ON d.id=p.draft_id WHERE d.id=?",(draft_id,)).fetchone()
+                if not row["question_snapshot"]:
+                    conn.execute("UPDATE standard_publications SET question_snapshot=? WHERE id=?",(snapshot_questions(conn,json.loads(row["question_ids"])),row["id"]))
+            unpub=[draft_id for draft_id in affected if draft_id not in published]
+            if unpub:
+                placeholders=",".join("?" for _ in unpub)
+                conn.execute(f"DELETE FROM exam_drafts WHERE id IN ({placeholders})",unpub)
         conn.execute("DELETE FROM question_bank WHERE "+where,params)
-    return {"deleted_questions":count,"removed_exams":len(affected),"historical_scores_preserved":True}
+    return {"deleted_questions":count,"removed_exams":len(unpub) if affected else 0,"historical_scores_preserved":True}
