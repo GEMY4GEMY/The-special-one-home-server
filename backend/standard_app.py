@@ -10,6 +10,7 @@ from backend.app import FRONTEND
 from backend.app import app, admin_only, db, init_question_tables, ADMIN_USERNAME, password_hash as hasher, sessions
 from fastapi import Response
 import hashlib
+from datetime import datetime, timezone
 
 # Disable inference routes in this edition, even if a client calls them directly.
 app.router.routes[:] = [
@@ -37,13 +38,38 @@ async def import_question_bank(file: UploadFile = File(...), stage: str | None =
             raise HTTPException(422, "Select a valid stage and grade for import")
         # Assign all questions to the explicitly chosen class, regardless of file metadata.
         rows = [(grade, *row[1:]) for row in rows]
+    batch_id = secrets.token_urlsafe(16)
     with db() as conn:
-        init_question_tables(conn)
-        conn.executemany(
-            "INSERT INTO question_bank (grade,unit,lesson,difficulty,kind,prompt,answer,options) VALUES (?,?,?,?,?,?,?,?)",
-            rows,
+        init_import_batches(conn)
+        conn.execute(
+            "INSERT INTO standard_import_batches(id,filename,grade,question_count,imported_at) VALUES (?,?,?,?,?)",
+            (batch_id, file.filename, grade or "From JSON", len(rows), datetime.now(timezone.utc).isoformat()),
         )
-    return {"imported": len(rows), "grade": grade or "From JSON", "status": "complete"}
+        conn.executemany(
+            "INSERT INTO question_bank (grade,unit,lesson,difficulty,kind,prompt,answer,options,import_batch_id) VALUES (?,?,?,?,?,?,?,?,?)",
+            [(*row, batch_id) for row in rows],
+        )
+    return {"imported": len(rows), "grade": grade or "From JSON", "batch_id": batch_id, "status": "complete"}
+
+
+def init_import_batches(conn):
+    init_question_tables(conn)
+    conn.execute("CREATE TABLE IF NOT EXISTS standard_import_batches (id TEXT PRIMARY KEY, filename TEXT NOT NULL, grade TEXT NOT NULL, question_count INTEGER NOT NULL, imported_at TEXT NOT NULL)")
+    columns = {row["name"] for row in conn.execute("PRAGMA table_info(question_bank)")}
+    if "import_batch_id" not in columns:
+        conn.execute("ALTER TABLE question_bank ADD COLUMN import_batch_id TEXT")
+
+
+@app.get("/api/admin/standard/import-batches")
+def list_import_batches(user=Depends(admin_only)):
+    with db() as conn:
+        init_import_batches(conn)
+        return [dict(row) for row in conn.execute(
+            "SELECT b.id,b.filename,b.grade,b.imported_at,COUNT(q.id) AS question_count "
+            "FROM standard_import_batches b LEFT JOIN question_bank q ON q.import_batch_id=b.id "
+            "GROUP BY b.id ORDER BY b.imported_at DESC"
+        )]
+
 
 
 class PublicStudentSignup(BaseModel):
