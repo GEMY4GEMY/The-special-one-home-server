@@ -3,6 +3,39 @@ document.addEventListener("DOMContentLoaded",()=>{
  const admin=document.getElementById("admin-area");if(!admin)return;
  const panel=document.createElement("section");panel.className="panel admin-panel";
  panel.innerHTML='<h3>Exam Builder / إعداد الامتحان</h3><p class="muted">Choose grade, one or more units, question types and number of questions. Create and publish in one step: the assigned exam appears immediately for students in that grade.</p><form id="std-builder-form" class="admin-form"><label>Exam title<input name="title" required maxlength="150" placeholder="October Revision"></label><label>Stage / المرحلة<select id="std-builder-stage" required><option value="">Select stage / اختر المرحلة</option><option value="Primary">Primary / ابتدائي</option><option value="Preparatory">Preparatory / إعدادي</option><option value="Secondary">Secondary / ثانوي</option></select></label><label>Grade / الصف<select id="std-builder-grade" required disabled><option value="">Select stage first</option></select></label><fieldset class="wide"><legend>Units / الوحدات (select one or more)</legend><div id="std-builder-units"></div></fieldset><fieldset class="wide"><legend>Question types / أنواع الأسئلة</legend><div id="std-builder-kinds"></div></fieldset><label>Number of questions<select name="count"><option>20</option><option>40</option><option>60</option><option>80</option><option>100</option></select></label><button class="primary" type="submit">Create & show to students / إنشاء وعرض الامتحان</button></form><p id="std-builder-message" role="status"></p><button class="outline" id="std-builder-refresh" type="button">Refresh filters and published exams</button><h3>Published exams / الامتحانات المنشورة</h3><div id="std-builder-published"></div>';
+ panel.insertAdjacentHTML("beforeend",'<hr><h3>Imported question files / ملفات بنك الأسئلة</h3><p class="muted">Files are added to the existing question bank. Deleting a file is blocked if its questions are used by an exam.</p><button type="button" class="outline" id="std-files-refresh">Refresh imported files / تحديث الملفات</button><p id="std-files-status" role="status"></p><div id="std-files-list" class="results"></div>');
+ const filesList=panel.querySelector("#std-files-list"),filesStatus=panel.querySelector("#std-files-status");
+ async function refreshFiles(){
+   filesStatus.textContent="Loading imported files...";
+   filesList.replaceChildren();
+   try{
+     const response=await fetch("/api/admin/standard/import-batches",{credentials:"same-origin"});
+     const data=await response.json();
+     if(!response.ok)throw Error(typeof data.detail==="string"?data.detail:"Cannot load files");
+     if(!data.length){filesStatus.textContent="No tracked imports yet. Older questions remain in the bank.";return;}
+     for(const file of data){
+       const row=document.createElement("div");row.className="result-item";
+       const info=document.createElement("span");
+       info.textContent=file.filename+" | "+file.grade+" | "+file.question_count+" questions | "+file.imported_at.slice(0,10);
+       const remove=document.createElement("button");remove.type="button";remove.className="outline";remove.textContent="Delete file / حذف الملف";
+       remove.onclick=async()=>{
+         if(!confirm("Delete "+file.filename+" and its "+file.question_count+" questions? This cannot be undone."))return;
+         remove.disabled=true;
+         try{
+           const result=await fetch("/api/admin/standard/import-batches/"+encodeURIComponent(file.id),{method:"DELETE",credentials:"same-origin"});
+           const data=await result.json();
+           if(!result.ok)throw Error(typeof data.detail==="string"?data.detail:"Delete failed");
+           filesStatus.textContent="Deleted "+data.deleted_questions+" questions from "+file.filename;
+           await refreshFiles();await refresh();
+         }catch(error){filesStatus.textContent=error.message;remove.disabled=false;}
+       };
+       row.append(info,remove);filesList.append(row);
+     }
+     filesStatus.textContent=data.length+" imported files / ملفات مستوردة";
+   }catch(error){filesStatus.textContent=error.message;}
+ }
+ panel.querySelector("#std-files-refresh").onclick=refreshFiles;
+ document.addEventListener("tso:admin-login",refreshFiles);
  panel.insertAdjacentHTML("beforeend",'<hr><h3>Delete question bank / حذف بنك الأسئلة</h3><p class="muted">Deleting questions also removes affected exams from students. Previously recorded scores remain saved.</p><label>Delete scope / نطاق الحذف<select id="std-delete-scope"><option value="grade">Selected grade / الصف الحالي</option><option value="stage">Selected stage / المرحلة الحالية</option><option value="all">All questions / كل الأسئلة</option></select></label><button type="button" class="outline" id="std-delete-questions">Delete selected questions / حذف الأسئلة المحددة</button><p id="std-delete-status" role="status"></p>');
  admin.prepend(panel);
  const stage=panel.querySelector("#std-builder-stage"),grade=panel.querySelector("#std-builder-grade"),units=panel.querySelector("#std-builder-units"),kinds=panel.querySelector("#std-builder-kinds"),message=panel.querySelector("#std-builder-message"),published=panel.querySelector("#std-builder-published");
