@@ -20,6 +20,17 @@ def init(conn):
     conn.execute("CREATE TABLE IF NOT EXISTS standard_visibility (publication_id TEXT PRIMARY KEY, active INTEGER NOT NULL DEFAULT 0)")
     conn.execute("CREATE TABLE IF NOT EXISTS standard_attempts (id INTEGER PRIMARY KEY, student_id INTEGER NOT NULL, publication_id TEXT NOT NULL, attempt_id TEXT NOT NULL, score INTEGER NOT NULL, maximum INTEGER NOT NULL, submitted_at TEXT NOT NULL, UNIQUE(student_id,attempt_id))")
 
+def snapshot_questions(conn, ids):
+    if not ids:
+        raise HTTPException(422, "Empty exam")
+    marks = ",".join("?" for _ in ids)
+    rows = conn.execute(f"SELECT * FROM question_bank WHERE id IN ({marks})", ids).fetchall()
+    by_id = {str(row["id"]): dict(row) for row in rows}
+    if len(by_id) != len(ids):
+        raise HTTPException(409, "Exam references missing questions")
+    return json.dumps([by_id[str(qid)] for qid in ids])
+
+
 def student(user):
     if user["role"] != "student":
         raise HTTPException(403, "Student account required")
@@ -45,7 +56,7 @@ def publish(draft_id: str, user=Depends(admin_only)):
         if prior:
             return {"id": prior["id"], "published": True}
         publication_id = secrets.token_urlsafe(18)
-        conn.execute("INSERT INTO standard_publications(id,draft_id,published_at) VALUES (?,?,?)", (publication_id,draft_id,datetime.now(timezone.utc).isoformat()))
+        conn.execute("INSERT INTO standard_publications(id,draft_id,published_at,question_snapshot) VALUES (?,?,?,?)", (publication_id,draft_id,datetime.now(timezone.utc).isoformat(),snapshot_questions(conn,ids)))
     return {"id": publication_id, "published": True}
 
 @app.get("/api/standard/exams")
