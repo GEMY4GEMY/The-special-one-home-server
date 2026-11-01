@@ -16,6 +16,12 @@ document.addEventListener("DOMContentLoaded",()=>{
       const label=document.createElement("p");label.textContent="Assigned by your teacher / امتحان محدد من المدير: "+exam.title+" ("+exam.question_count+" questions)";
       const b=document.createElement("button");b.className="primary";let saved=false;try{saved=Object.keys(sessionStorage).some(key=>key.startsWith("tso-exam-progress:")&&key.endsWith(":"+exam.id))}catch(_){}b.textContent=saved?"Continue exam / استكمال الامتحان":"Start required exam / ابدأ الامتحان الإجباري";b.onclick=()=>start(exam.id);
       content.append(label,b);
+      const resumable=await request("/api/standard/resumable-exams");
+      for(const pending of resumable.filter(x=>x.id!==exam.id)){
+        const resume=document.createElement("button");resume.className="outline";
+        resume.textContent="Continue previous exam / استكمال الامتحان السابق: "+pending.title;
+        resume.onclick=()=>start(pending.id);content.append(resume);
+      }
     }catch(e){content.textContent=e.message}
   };
   const practice=document.createElement("section");practice.className="panel";
