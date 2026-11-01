@@ -120,7 +120,7 @@ async def restore_standard_backup(file: UploadFile = File(...), user=Depends(adm
     content = await file.read(max_bytes + 1)
     if len(content) > max_bytes:
         raise HTTPException(413, "Backup exceeds 50 MB")
-    if not content.startswith(b"SQLite format 3\\x00"):
+    if not content.startswith(b"SQLite format 3\x00"):
         raise HTTPException(422, "Not a SQLite database")
     with tempfile.TemporaryDirectory(prefix="tso-restore-") as directory:
         incoming = Path(directory) / "incoming.sqlite3"
