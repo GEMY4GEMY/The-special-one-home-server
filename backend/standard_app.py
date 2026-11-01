@@ -5,11 +5,14 @@ import sqlite3
 from pydantic import BaseModel, Field
 from backend.app import password_hash
 from fastapi import Depends, File, Form, HTTPException, UploadFile
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response as DownloadResponse
 from backend.app import FRONTEND
 from backend.app import app, admin_only, db, init_question_tables, ADMIN_USERNAME, password_hash as hasher, sessions
 from fastapi import Response
 import hashlib
+import tempfile
+from pathlib import Path
+from backend.app import DB_PATH
 from datetime import datetime, timezone
 
 # Disable inference routes in this edition, even if a client calls them directly.
@@ -88,6 +91,24 @@ def delete_import_batch(batch_id: str, user=Depends(admin_only)):
         conn.execute("DELETE FROM question_bank WHERE import_batch_id=?", (batch_id,))
         conn.execute("DELETE FROM standard_import_batches WHERE id=?", (batch_id,))
     return {"deleted_questions": len(ids), "deleted_batch_id": batch_id}
+
+
+@app.get("/api/admin/standard/backup")
+def download_standard_backup(user=Depends(admin_only)):
+    """Download a consistent SQLite snapshot, including accounts, exams and results."""
+    with tempfile.TemporaryDirectory(prefix="tso-backup-") as directory:
+        destination = Path(directory) / "the-special-one-backup.sqlite3"
+        with sqlite3.connect(str(DB_PATH)) as source:
+            with sqlite3.connect(str(destination)) as target:
+                source.backup(target)
+        content = destination.read_bytes()
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+    return DownloadResponse(
+        content=content,
+        media_type="application/octet-stream",
+        headers={"Content-Disposition": f'attachment; filename="THE_SPECIAL_ONE_BACKUP_{stamp}.sqlite3"',
+                 "Cache-Control": "no-store"},
+    )
 
 
 class PublicStudentSignup(BaseModel):
