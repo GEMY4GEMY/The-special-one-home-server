@@ -119,7 +119,11 @@ document.addEventListener("DOMContentLoaded",()=>{
         },700);
       };
       // Retry the current answers when Wi-Fi returns after an interrupted save.
-      const retryOnReconnect=()=>saveProgress();
+      const retryOnReconnect=()=>{
+        // A 409 is a server-side attempt/revision conflict, not an offline save.
+        // Do not retry it automatically: the student must reload the saved attempt.
+        if(saveStatus.textContent.includes("في انتظار الاتصال")) saveProgress();
+      };
       window.addEventListener("online",retryOnReconnect);
       // A tablet may reconnect to the local server without firing the browser online event.
       // Retry only an unsynced save when the student returns to the exam tab.
