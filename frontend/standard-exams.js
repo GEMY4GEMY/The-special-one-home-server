@@ -77,6 +77,9 @@ document.addEventListener("DOMContentLoaded",()=>{
           request("/api/standard/exams/"+encodeURIComponent(id)+"/progress",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({attempt_id:attemptId,answers,page})}).catch(error=>console.warn("Progress will retry on next change",error));
         },700);
       };
+      // Retry the current answers when Wi-Fi returns after an interrupted save.
+      const retryOnReconnect=()=>saveProgress();
+      window.addEventListener("online",retryOnReconnect);
       window.addEventListener("pagehide",()=>{
         try{sessionStorage.setItem(storageKey,JSON.stringify({answers,page,attemptId}))}catch(_){}
         clearTimeout(saveTimer);
