@@ -141,7 +141,9 @@ def save_progress(exam_id: str, payload: ProgressPayload, user=Depends(current_u
         if conn.execute("SELECT 1 FROM standard_attempts WHERE student_id=? AND publication_id=? AND attempt_id=?", (user["id"],exam_id,payload.attempt_id)).fetchone():
             raise HTTPException(409, "This attempt has already been submitted")
         existing = conn.execute("SELECT attempt_id,revision FROM standard_progress WHERE student_id=? AND publication_id=?", (user["id"],exam_id)).fetchone()
-        if existing and existing["attempt_id"] == payload.attempt_id and payload.revision > 0 and payload.revision <= existing["revision"]:
+        if existing and existing["attempt_id"] != payload.attempt_id:
+            raise HTTPException(409, "Another exam session is already in progress; resume the saved attempt")
+        if existing and payload.revision > 0 and payload.revision <= existing["revision"]:
             raise HTTPException(409, "An equal or newer progress revision is already saved")
         conn.execute("INSERT INTO standard_progress(student_id,publication_id,attempt_id,answers,page,updated_at,revision) VALUES (?,?,?,?,?,?,?) ON CONFLICT(student_id,publication_id) DO UPDATE SET attempt_id=excluded.attempt_id,answers=excluded.answers,page=excluded.page,updated_at=excluded.updated_at,revision=excluded.revision", (user["id"],exam_id,payload.attempt_id,json.dumps(payload.answers),payload.page,datetime.now(timezone.utc).isoformat(),payload.revision))
     return {"saved":True}
