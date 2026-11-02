@@ -98,6 +98,7 @@ document.addEventListener("DOMContentLoaded",()=>{
       let saveFailureKind=null;
       saveStatus.textContent="Exam ready / الامتحان جاهز";
       const saveProgress=()=>{
+        // Preserve the latest local answers until the server confirms this revision.
         saveFailureKind=null;
         saveStatus.textContent="Saving answers / جاري حفظ الإجابات";
         revision+=1;
@@ -126,6 +127,23 @@ document.addEventListener("DOMContentLoaded",()=>{
         // A 409 is a server-side attempt/revision conflict, not an offline save.
         // Do not retry it automatically: the student must reload the saved attempt.
         if(saveFailureKind==="offline") saveProgress();
+      };
+      const recoverConflict=async()=>{
+        if(saveFailureKind!=="conflict") return;
+        try{
+          const remote=await request("/api/standard/exams/"+encodeURIComponent(id)+"/progress");
+          if(!remote?.attemptId){
+            saveStatus.textContent="No saved server attempt found / لا توجد محاولة محفوظة على السيرفر";
+            return;
+          }
+          // Never silently overwrite the student's unsynced local answers.
+          const backupKey=storageKey+":conflict-backup";
+          try{sessionStorage.setItem(backupKey,JSON.stringify({answers,page,attemptId,revision}))}catch(_){}
+          saveStatus.textContent="Server attempt available. Local answers kept as a backup; reopen the exam to recover / توجد محاولة على السيرفر، وتم الاحتفاظ بنسخة محلية قبل إعادة فتح الامتحان";
+        }catch(error){
+          saveStatus.textContent="Cannot load server attempt yet / تعذر تحميل المحاولة من السيرفر حاليًا";
+          console.warn("Conflict recovery failed",error);
+        }
       };
       window.addEventListener("online",retryOnReconnect);
       // A tablet may reconnect to the local server without firing the browser online event.
