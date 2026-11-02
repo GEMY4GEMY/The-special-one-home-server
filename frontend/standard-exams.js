@@ -106,6 +106,23 @@ document.addEventListener("DOMContentLoaded",()=>{
         const info=document.createElement("p");
         info.textContent="Local backup: "+Object.keys(backupAnswers).length+" answers; current attempt: "+Object.keys(serverAnswers).length+" answers; differences: "+differing+" / النسخة المحلية: "+Object.keys(backupAnswers).length+"، المحاولة الحالية: "+Object.keys(serverAnswers).length+"، الاختلافات: "+differing+". No automatic merge / لا يوجد دمج تلقائي.";
         comparison.append(summary,info);
+        if(differing){
+          const differences=document.createElement("ol");
+          for(const qid of allIds){
+            if(backupAnswers[qid]===serverAnswers[qid]) continue;
+            const question=exam.questions.find(q=>String(q.id)===qid);
+            const item=document.createElement("li");
+            const questionText=document.createElement("strong");
+            questionText.textContent=question?.prompt||("Question "+qid+" / السؤال "+qid);
+            const local=document.createElement("p");
+            local.textContent="Local / محلي: "+(backupAnswers[qid]??"—");
+            const remote=document.createElement("p");
+            remote.textContent="Current attempt / المحاولة الحالية: "+(serverAnswers[qid]??"—");
+            item.append(questionText,local,remote);
+            differences.append(item);
+          }
+          comparison.append(differences);
+        }
         const priorComparison=panel.querySelector("#tso-conflict-comparison");
         if(priorComparison) priorComparison.remove();
         comparison.id="tso-conflict-comparison";
