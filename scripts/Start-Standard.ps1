@@ -36,5 +36,17 @@ try {
 }
 Write-Host 'THE SPECIAL ONE Standard | Admin username: Mrsameh | Port: 200'
 Write-Host 'Open http://localhost:200/standard-home (NOT the older AI portal at /)'
+Write-Host 'Tablet access: connect tablets to the same Wi-Fi network, then open:'
+$lanAddresses = @(Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object {
+    $_.IPAddress -notmatch '^(127\\.|169\\.254\\.)' -and $_.AddressState -eq 'Preferred'
+} | Select-Object -ExpandProperty IPAddress -Unique)
+if ($lanAddresses.Count -eq 0) {
+    Write-Host 'No active LAN IPv4 detected. Connect the PC to Wi-Fi or Ethernet.'
+} else {
+    foreach ($address in $lanAddresses) {
+        Write-Host ("  http://{0}:200/standard-home" -f $address)
+    }
+}
+Write-Host 'If a tablet cannot connect, allow port 200 on Windows Firewall for Private networks.'
 Start-Process 'http://localhost:200/standard-home'
 & $python -m uvicorn backend.standard_app:app --host 0.0.0.0 --port 200 --workers 1
