@@ -89,6 +89,16 @@ document.addEventListener("DOMContentLoaded",()=>{
           if(!saved||saved.attemptId!==remote.attemptId||remoteRevision>=localRevision) saved=remote;
         }
       }catch(error){console.warn("Server progress unavailable; using local recovery",error)}
+      // A conflict backup is never merged automatically into the server attempt.
+      // Show it explicitly so the student can preserve their unsynced work.
+      let conflictBackup=null;
+      try{conflictBackup=JSON.parse(sessionStorage.getItem(storageKey+":conflict-backup")||"null")}catch(_){}
+      if(conflictBackup && typeof conflictBackup.answers==="object" && conflictBackup.answers){
+        const notice=document.createElement("p");
+        notice.className="muted";
+        notice.textContent="Unsynced local backup available ("+Object.keys(conflictBackup.answers).length+" answers). Server answers remain separate / توجد نسخة محلية غير متزامنة ("+Object.keys(conflictBackup.answers).length+" إجابات)، ولن تُدمج تلقائيًا مع السيرفر.";
+        content.append(notice);
+      }
       const answers=saved&&typeof saved.answers==="object"&&saved.answers? saved.answers:{};
       const pageSize=6;
       let page=Number.isInteger(saved?.page)?Math.max(0,saved.page):0;
