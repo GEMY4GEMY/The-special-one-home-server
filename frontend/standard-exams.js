@@ -95,8 +95,10 @@ document.addEventListener("DOMContentLoaded",()=>{
       const attemptId=saved?.attemptId||(crypto.randomUUID?crypto.randomUUID():String(Date.now())+"-attempt");
       let revision=Number.isSafeInteger(saved?.revision)?saved.revision:0;
       let saveTimer=null;
+      let saveFailureKind=null;
       saveStatus.textContent="Exam ready / الامتحان جاهز";
       const saveProgress=()=>{
+        saveFailureKind=null;
         saveStatus.textContent="Saving answers / جاري حفظ الإجابات";
         revision+=1;
         try{sessionStorage.setItem(storageKey,JSON.stringify({answers,page,attemptId,revision}))}catch(_){}
@@ -107,10 +109,11 @@ document.addEventListener("DOMContentLoaded",()=>{
           const sentAnswers=JSON.parse(JSON.stringify(answers));
           const sentPage=page;
           request("/api/standard/exams/"+encodeURIComponent(id)+"/progress",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({attempt_id:attemptId,answers:sentAnswers,page:sentPage,revision:sentRevision})})
-            .then(()=>{if(sentRevision===revision)saveStatus.textContent="Saved on server / تم الحفظ على السيرفر";})
+            .then(()=>{if(sentRevision===revision){saveFailureKind=null;saveStatus.textContent="Saved on server / تم الحفظ على السيرفر";}})
              .catch(error=>{
               if(sentRevision!==revision)return;
               const conflict=String(error?.message||"").includes("409");
+              saveFailureKind=conflict?"conflict":"offline";
               saveStatus.textContent=conflict
                 ?"Save conflict: reopen this exam to load the current attempt / تعارض في الحفظ: افتح الامتحان مجددًا لاسترجاع المحاولة الحالية"
                 :"Saved in this browser session; waiting for connection / محفوظ في جلسة المتصفح وفي انتظار الاتصال";
@@ -122,19 +125,19 @@ document.addEventListener("DOMContentLoaded",()=>{
       const retryOnReconnect=()=>{
         // A 409 is a server-side attempt/revision conflict, not an offline save.
         // Do not retry it automatically: the student must reload the saved attempt.
-        if(saveStatus.textContent.includes("في انتظار الاتصال")) saveProgress();
+        if(saveFailureKind==="offline") saveProgress();
       };
       window.addEventListener("online",retryOnReconnect);
       // A tablet may reconnect to the local server without firing the browser online event.
       // Retry only an unsynced save when the student returns to the exam tab.
       const retryOnReturn=()=>{
-        if(document.visibilityState==="visible" && saveStatus.textContent.includes("في انتظار الاتصال")) saveProgress();
+        if(document.visibilityState==="visible" && saveFailureKind==="offline") saveProgress();
       };
       document.addEventListener("visibilitychange",retryOnReturn);
       // Browsers do not always emit "online" when the local PC server returns.
       // Retry at a modest interval only while the current save is unsynced.
       const retryInterval=setInterval(()=>{
-        if(document.visibilityState==="visible" && saveStatus.textContent.includes("في انتظار الاتصال") && navigator.onLine) saveProgress();
+        if(document.visibilityState==="visible" && saveFailureKind==="offline" && navigator.onLine) saveProgress();
       },15000);
       const flushOnPageHide=()=>{
         // A final flush must be newer than any previously queued or completed save.
