@@ -93,6 +93,10 @@ try {
   $staleRejected = $false
   try { Invoke-RestMethod $progressUrl -Method Put -Body $progressOld -ContentType 'application/json' -WebSession $studentSession | Out-Null } catch { if ([int]$_.Exception.Response.StatusCode -eq 409) { $staleRejected = $true } }
   if (-not $staleRejected) { throw 'Outdated progress revision was not rejected' }
+  $otherSession = @{attempt_id='standard-smoke-attempt-0002';answers=@{};page=0;revision=3} | ConvertTo-Json -Depth 6
+  $otherSessionRejected = $false
+  try { Invoke-RestMethod $progressUrl -Method Put -Body $otherSession -ContentType 'application/json' -WebSession $studentSession | Out-Null } catch { if ([int]$_.Exception.Response.StatusCode -eq 409) { $otherSessionRejected = $true } }
+  if (-not $otherSessionRejected) { throw 'Competing exam attempt replaced saved progress' }
   $savedProgress = Invoke-RestMethod $progressUrl -WebSession $studentSession
   if ($savedProgress.revision -ne 2 -or $savedProgress.page -ne 1) { throw 'Stale save overwrote current progress' }
   $submission = @{attempt_id='standard-smoke-attempt-0001';answers=$answers} | ConvertTo-Json -Depth 6
