@@ -77,7 +77,15 @@ document.addEventListener("DOMContentLoaded",()=>{
           request("/api/standard/exams/"+encodeURIComponent(id)+"/progress",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({attempt_id:attemptId,answers,page})}).catch(error=>console.warn("Progress will retry on next change",error));
         },700);
       };
-      window.addEventListener("pagehide",saveProgress,{once:true});
+      window.addEventListener("pagehide",()=>{
+        try{sessionStorage.setItem(storageKey,JSON.stringify({answers,page,attemptId}))}catch(_){}
+        clearTimeout(saveTimer);
+        fetch("/api/standard/exams/"+encodeURIComponent(id)+"/progress",{
+          method:"PUT",credentials:"same-origin",keepalive:true,
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({attempt_id:attemptId,answers,page})
+        }).catch(()=>{});
+      },{once:true});
       const totalPages=Math.ceil(exam.questions.length/pageSize);
       if(saved){const resumed=document.createElement("p");resumed.className="muted";resumed.textContent="Your saved answers were restored / تم استرجاع إجاباتك المحفوظة";content.append(resumed)}
       page=Math.min(page,Math.max(0,totalPages-1));
