@@ -89,6 +89,13 @@ try {
   $progressUrl = "http://127.0.0.1:19000/api/standard/exams/"+$published.id+"/progress"
   $progressNew = @{attempt_id='standard-smoke-attempt-0001';answers=$answers;page=1;revision=2} | ConvertTo-Json -Depth 6
   Invoke-RestMethod $progressUrl -Method Put -Body $progressNew -ContentType 'application/json' -WebSession $studentSession | Out-Null
+  # A different student must never see or replace the first student's saved answers.
+  $otherStudentProgress = Invoke-RestMethod $progressUrl -WebSession $publicSession
+  if ($otherStudentProgress -and $otherStudentProgress.attemptId) { throw 'Progress leaked across student accounts' }
+  $otherStudentSave = @{attempt_id='other-student-attempt';answers=@{};page=0;revision=1} | ConvertTo-Json -Depth 6
+  Invoke-RestMethod $progressUrl -Method Put -Body $otherStudentSave -ContentType 'application/json' -WebSession $publicSession | Out-Null
+  $firstStudentProgress = Invoke-RestMethod $progressUrl -WebSession $studentSession
+  if ($firstStudentProgress.attemptId -ne 'standard-smoke-attempt-0001' -or $firstStudentProgress.revision -ne 2) { throw 'Another student overwrote the first student progress' }
   $progressOld = @{attempt_id='standard-smoke-attempt-0001';answers=@{};page=0;revision=1} | ConvertTo-Json -Depth 6
   $staleRejected = $false
   try { Invoke-RestMethod $progressUrl -Method Put -Body $progressOld -ContentType 'application/json' -WebSession $studentSession | Out-Null } catch { if ([int]$_.Exception.Response.StatusCode -eq 409) { $staleRejected = $true } }
