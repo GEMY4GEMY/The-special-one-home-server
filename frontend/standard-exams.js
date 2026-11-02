@@ -97,7 +97,14 @@ document.addEventListener("DOMContentLoaded",()=>{
           const sentRevision=revision;
           request("/api/standard/exams/"+encodeURIComponent(id)+"/progress",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({attempt_id:attemptId,answers,page,revision:sentRevision})})
             .then(()=>{if(sentRevision===revision)saveStatus.textContent="Saved on server / تم الحفظ على السيرفر";})
-            .catch(error=>{saveStatus.textContent="Saved on this device; waiting for connection / محفوظ على الجهاز وفي انتظار الاتصال";console.warn("Progress will retry on next change",error)});
+             .catch(error=>{
+              if(sentRevision!==revision)return;
+              const conflict=String(error?.message||"").includes("409");
+              saveStatus.textContent=conflict
+                ?"Save conflict: reopen this exam to load the current attempt / تعارض في الحفظ: افتح الامتحان مجددًا لاسترجاع المحاولة الحالية"
+                :"Saved in this browser session; waiting for connection / محفوظ في جلسة المتصفح وفي انتظار الاتصال";
+              console.warn("Progress save failed",error);
+            });
         },700);
       };
       // Retry the current answers when Wi-Fi returns after an interrupted save.
