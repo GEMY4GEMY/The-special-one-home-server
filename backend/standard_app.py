@@ -133,9 +133,22 @@ async def restore_standard_backup(file: UploadFile = File(...), user=Depends(adm
                 required = {"users", "students", "question_bank", "exam_drafts"}
                 if not required.issubset(tables):
                     raise HTTPException(422, "Backup is missing required application tables")
+                required_columns = {
+                    "users": {"id", "username", "password_hash", "role"},
+                    "students": {"id", "user_id", "student_code", "full_name", "grade"},
+                    "question_bank": {"id", "grade", "unit", "lesson", "difficulty", "kind", "prompt", "answer", "options"},
+                    "exam_drafts": {"id", "title", "grade", "question_ids"},
+                }
+                for table, expected in required_columns.items():
+                    actual = {row[1] for row in source.execute(f"PRAGMA table_info({table})")}
+                    if not expected.issubset(actual):
+                        raise HTTPException(422, f"Backup has incompatible {table} schema")
                 admins = source.execute("SELECT COUNT(*) FROM users WHERE role='admin'").fetchone()[0]
                 if admins < 1:
                     raise HTTPException(422, "Backup has no administrator account")
+                bad_drafts = source.execute("SELECT COUNT(*) FROM exam_drafts WHERE question_ids IS NULL OR NOT json_valid(question_ids)").fetchone()[0]
+                if bad_drafts:
+                    raise HTTPException(422, "Backup contains invalid exam drafts")
                 # Make a recoverable copy of the current database before replacement.
                 stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
                 safety = DB_PATH.parent / f"pre_restore_{stamp}.sqlite3"
