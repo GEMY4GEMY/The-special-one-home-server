@@ -3,7 +3,8 @@ $env:TSO_DB_PATH = Join-Path $env:RUNNER_TEMP 'standard-release-smoke.sqlite3'
 $env:TSO_ADMIN_INITIAL_PASSWORD = 'TemporaryTestPassword2026'
 $env:TSO_ADMIN_USERNAME = 'Mrsameh'
 $env:TSO_EDITION = 'standard'
-$server = Start-Process -FilePath (Join-Path (Get-Location) 'runtime/python.exe') -ArgumentList '-m','uvicorn','backend.standard_app:app','--host','127.0.0.1','--port','19000' -PassThru -WindowStyle Hidden
+$serverLog = Join-Path $env:RUNNER_TEMP 'tso-standard-server-stderr.log'
+$server = Start-Process -FilePath (Join-Path (Get-Location) 'runtime/python.exe') -ArgumentList '-m','uvicorn','backend.standard_app:app','--host','127.0.0.1','--port','19000' -PassThru -WindowStyle Hidden -RedirectStandardError $serverLog
 try {
   $ready = $false
   for ($i = 0; $i -lt 30; $i++) {
@@ -164,6 +165,7 @@ try {
   Write-Host 'PASS: SQLite backup roundtrip and session invalidation'
   Write-Host 'PASS: login, import, publish, activation, student exam, practice, grading, results'
 } finally {
+  if (Test-Path $serverLog) { Get-Content $serverLog -Tail 100 }
   Stop-Process -Id $server.Id -ErrorAction SilentlyContinue
   Remove-Item Env:TSO_ADMIN_INITIAL_PASSWORD -ErrorAction SilentlyContinue
 }
