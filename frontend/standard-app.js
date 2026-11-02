@@ -71,10 +71,17 @@ $('login-form').addEventListener('submit',async e=>{
   finally{button.disabled=false;}
 });
 $('logout').addEventListener('click',async()=>{
-  document.dispatchEvent(new Event('tso:student-logout'));
-  try{await api('/api/logout',{method:'POST'});}catch{}
-  try{for(let i=sessionStorage.length-1;i>=0;i--){const key=sessionStorage.key(i);if(key&&key.startsWith('tso-exam-progress:'))sessionStorage.removeItem(key)}}catch(_){}
-  location.reload();
+  const button=$('logout');
+  button.disabled=true;
+  try{
+    await api('/api/logout',{method:'POST'});
+    document.dispatchEvent(new Event('tso:student-logout'));
+    try{for(let i=sessionStorage.length-1;i>=0;i--){const key=sessionStorage.key(i);if(key&&key.startsWith('tso-exam-progress:'))sessionStorage.removeItem(key)}}catch(_){}
+    location.reload();
+  }catch(error){
+    alert('Logout failed; your session may still be active. Check the connection and try again. / تعذر تسجيل الخروج وقد تظل الجلسة نشطة. تحقق من الاتصال وحاول مجددًا.');
+    button.disabled=false;
+  }
 });
 async function restoreSession(){try{showDashboard(await api('/api/me'));}catch{}}
 window.addEventListener('online',checkConnection);
