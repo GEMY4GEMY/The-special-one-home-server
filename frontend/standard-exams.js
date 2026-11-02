@@ -114,6 +114,8 @@ document.addEventListener("DOMContentLoaded",()=>{
         continueSaved.className="outline";
         continueSaved.textContent="Continue server attempt / استكمال المحاولة المحفوظة على السيرفر";
         continueSaved.onclick=async()=>{
+          const confirmed=window.confirm("Continue with the server's saved answers? The local backup will remain available separately and will NOT be merged.\n\nهل تريد استكمال إجابات السيرفر؟ ستظل النسخة المحلية الاحتياطية منفصلة ولن يتم دمجها.");
+          if(!confirmed) return;
           try{
             const current=await request("/api/standard/exams/"+encodeURIComponent(id)+"/progress");
             if(!current?.attemptId){
