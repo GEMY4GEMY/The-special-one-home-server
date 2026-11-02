@@ -11,6 +11,7 @@ from backend.app import app, admin_only, db, init_question_tables, ADMIN_USERNAM
 from fastapi import Response
 import hashlib
 import tempfile
+from contextlib import closing
 from pathlib import Path
 from backend.app import DB_PATH
 from datetime import datetime, timezone
@@ -98,8 +99,8 @@ def download_standard_backup(user=Depends(admin_only)):
     """Download a consistent SQLite snapshot, including accounts, exams and results."""
     with tempfile.TemporaryDirectory(prefix="tso-backup-") as directory:
         destination = Path(directory) / "the-special-one-backup.sqlite3"
-        with sqlite3.connect(str(DB_PATH)) as source:
-            with sqlite3.connect(str(destination)) as target:
+        with closing(sqlite3.connect(str(DB_PATH))) as source:
+            with closing(sqlite3.connect(str(destination))) as target:
                 source.backup(target)
         content = destination.read_bytes()
     stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
@@ -126,7 +127,7 @@ async def restore_standard_backup(file: UploadFile = File(...), user=Depends(adm
         incoming = Path(directory) / "incoming.sqlite3"
         incoming.write_bytes(content)
         try:
-            with sqlite3.connect(f"file:{incoming}?mode=ro", uri=True) as source:
+            with closing(sqlite3.connect(f"file:{incoming}?mode=ro", uri=True)) as source:
                 if source.execute("PRAGMA integrity_check").fetchone()[0] != "ok":
                     raise HTTPException(422, "SQLite integrity check failed")
                 tables = {row[0] for row in source.execute("SELECT name FROM sqlite_master WHERE type='table'")}
@@ -153,8 +154,8 @@ async def restore_standard_backup(file: UploadFile = File(...), user=Depends(adm
                 stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
                 safety = DB_PATH.parent / f"pre_restore_{stamp}.sqlite3"
                 DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-                with sqlite3.connect(str(DB_PATH), timeout=30) as live:
-                    with sqlite3.connect(str(safety)) as old:
+                with closing(sqlite3.connect(str(DB_PATH), timeout=30)) as live:
+                    with closing(sqlite3.connect(str(safety))) as old:
                         live.backup(old)
                     source.backup(live)
         except sqlite3.DatabaseError as exc:
