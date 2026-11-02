@@ -54,6 +54,11 @@ document.addEventListener("DOMContentLoaded",()=>{
   };
   document.addEventListener('tso:student-login',loadPracticeFilters);
   if(!document.getElementById('student-area').classList.contains('hidden'))loadPracticeFilters();
+  const saveStatus=document.createElement("p");
+  saveStatus.className="muted";
+  saveStatus.setAttribute("role","status");
+  saveStatus.setAttribute("aria-live","polite");
+  panel.insertBefore(saveStatus,content);
   let stopPreviousProgressListeners=null;
   async function start(id){
     if(stopPreviousProgressListeners){
@@ -61,6 +66,7 @@ document.addEventListener("DOMContentLoaded",()=>{
       stopPreviousProgressListeners=null;
     }
     content.replaceChildren();
+    saveStatus.textContent="Loading exam / جاري تحميل الامتحان";
     try{
       const exam=await request("/api/standard/exams/"+encodeURIComponent(id));
       const storageKey="tso-exam-progress:"+id;
@@ -81,12 +87,17 @@ document.addEventListener("DOMContentLoaded",()=>{
       const attemptId=saved?.attemptId||(crypto.randomUUID?crypto.randomUUID():String(Date.now())+"-attempt");
       let revision=Number.isSafeInteger(saved?.revision)?saved.revision:0;
       let saveTimer=null;
+      saveStatus.textContent="Exam ready / الامتحان جاهز";
       const saveProgress=()=>{
+        saveStatus.textContent="Saving answers / جاري حفظ الإجابات";
         revision+=1;
         try{sessionStorage.setItem(storageKey,JSON.stringify({answers,page,attemptId,revision}))}catch(_){}
         clearTimeout(saveTimer);
         saveTimer=setTimeout(()=>{
-          request("/api/standard/exams/"+encodeURIComponent(id)+"/progress",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({attempt_id:attemptId,answers,page,revision})}).catch(error=>console.warn("Progress will retry on next change",error));
+          const sentRevision=revision;
+          request("/api/standard/exams/"+encodeURIComponent(id)+"/progress",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({attempt_id:attemptId,answers,page,revision:sentRevision})})
+            .then(()=>{if(sentRevision===revision)saveStatus.textContent="Saved on server / تم الحفظ على السيرفر";})
+            .catch(error=>{saveStatus.textContent="Saved on this device; waiting for connection / محفوظ على الجهاز وفي انتظار الاتصال";console.warn("Progress will retry on next change",error)});
         },700);
       };
       // Retry the current answers when Wi-Fi returns after an interrupted save.
