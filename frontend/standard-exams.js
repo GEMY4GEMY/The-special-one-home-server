@@ -174,6 +174,11 @@ document.addEventListener("DOMContentLoaded",()=>{
           next.disabled=true;
           try{
             const result=await request("/api/standard/exams/"+encodeURIComponent(id)+"/submit",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({attempt_id:attemptId,answers})});
+            if(stopPreviousProgressListeners){
+              stopPreviousProgressListeners();
+              stopPreviousProgressListeners=null;
+            }
+            saveStatus.textContent="Exam submitted / تم تسليم الامتحان";
             try{sessionStorage.removeItem(storageKey)}catch(_){}
             content.replaceChildren();
             const score=document.createElement("section");score.className="tso-exam-result";score.textContent="🌟 Your result / نتيجتك: "+result.score+" / "+result.maximum;content.append(score);
