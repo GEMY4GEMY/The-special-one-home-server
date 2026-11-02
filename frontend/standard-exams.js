@@ -60,6 +60,14 @@ document.addEventListener("DOMContentLoaded",()=>{
   saveStatus.setAttribute("aria-live","polite");
   panel.insertBefore(saveStatus,content);
   let stopPreviousProgressListeners=null;
+  document.addEventListener("tso:student-logout",()=>{
+    if(stopPreviousProgressListeners){
+      stopPreviousProgressListeners();
+      stopPreviousProgressListeners=null;
+    }
+    saveStatus.textContent="";
+    content.replaceChildren();
+  });
   async function start(id){
     if(stopPreviousProgressListeners){
       stopPreviousProgressListeners();
