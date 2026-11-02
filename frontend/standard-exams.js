@@ -105,6 +105,9 @@ document.addEventListener("DOMContentLoaded",()=>{
         const info=document.createElement("p");
         info.textContent="Local backup: "+Object.keys(backupAnswers).length+" answers; current attempt: "+Object.keys(serverAnswers).length+" answers; differences: "+differing+" / النسخة المحلية: "+Object.keys(backupAnswers).length+"، المحاولة الحالية: "+Object.keys(serverAnswers).length+"، الاختلافات: "+differing+". No automatic merge / لا يوجد دمج تلقائي.";
         comparison.append(summary,info);
+        const priorComparison=panel.querySelector("#tso-conflict-comparison");
+        if(priorComparison) priorComparison.remove();
+        comparison.id="tso-conflict-comparison";
         panel.append(comparison);
       }
       const answers=saved&&typeof saved.answers==="object"&&saved.answers? saved.answers:{};
