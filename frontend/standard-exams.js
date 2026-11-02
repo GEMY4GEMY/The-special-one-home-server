@@ -94,10 +94,18 @@ document.addEventListener("DOMContentLoaded",()=>{
       let conflictBackup=null;
       try{conflictBackup=JSON.parse(sessionStorage.getItem(storageKey+":conflict-backup")||"null")}catch(_){}
       if(conflictBackup && typeof conflictBackup.answers==="object" && conflictBackup.answers){
-        const notice=document.createElement("p");
-        notice.className="muted";
-        notice.textContent="Unsynced local backup available ("+Object.keys(conflictBackup.answers).length+" answers). Server answers remain separate / توجد نسخة محلية غير متزامنة ("+Object.keys(conflictBackup.answers).length+" إجابات)، ولن تُدمج تلقائيًا مع السيرفر.";
-        saveStatus.textContent=notice.textContent;
+        const backupAnswers=conflictBackup.answers;
+        const serverAnswers=saved&&typeof saved.answers==="object"&&saved.answers?saved.answers:{};
+        const allIds=new Set([...Object.keys(backupAnswers),...Object.keys(serverAnswers)]);
+        let differing=0;
+        for(const qid of allIds) if(backupAnswers[qid]!==serverAnswers[qid]) differing++;
+        const comparison=document.createElement("details");
+        const summary=document.createElement("summary");
+        summary.textContent="Compare saved answers / مقارنة الإجابات المحفوظة";
+        const info=document.createElement("p");
+        info.textContent="Local backup: "+Object.keys(backupAnswers).length+" answers; current attempt: "+Object.keys(serverAnswers).length+" answers; differences: "+differing+" / النسخة المحلية: "+Object.keys(backupAnswers).length+"، المحاولة الحالية: "+Object.keys(serverAnswers).length+"، الاختلافات: "+differing+". No automatic merge / لا يوجد دمج تلقائي.";
+        comparison.append(summary,info);
+        panel.append(comparison);
       }
       const answers=saved&&typeof saved.answers==="object"&&saved.answers? saved.answers:{};
       const pageSize=6;
