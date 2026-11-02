@@ -86,6 +86,15 @@ try {
   if ($exam.questions[0].PSObject.Properties.Name -contains 'answer') { throw 'Answer key leaked' }
   $answers = @{}
   foreach ($q in $exam.questions) { $answers[$q.id] = 'A' }
+  $progressUrl = "http://127.0.0.1:19000/api/standard/exams/"+$published.id+"/progress"
+  $progressNew = @{attempt_id='standard-smoke-attempt-0001';answers=$answers;page=1;revision=2} | ConvertTo-Json -Depth 6
+  Invoke-RestMethod $progressUrl -Method Put -Body $progressNew -ContentType 'application/json' -WebSession $studentSession | Out-Null
+  $progressOld = @{attempt_id='standard-smoke-attempt-0001';answers=@{};page=0;revision=1} | ConvertTo-Json -Depth 6
+  $staleRejected = $false
+  try { Invoke-RestMethod $progressUrl -Method Put -Body $progressOld -ContentType 'application/json' -WebSession $studentSession | Out-Null } catch { if ([int]$_.Exception.Response.StatusCode -eq 409) { $staleRejected = $true } }
+  if (-not $staleRejected) { throw 'Outdated progress revision was not rejected' }
+  $savedProgress = Invoke-RestMethod $progressUrl -WebSession $studentSession
+  if ($savedProgress.revision -ne 2 -or $savedProgress.page -ne 1) { throw 'Stale save overwrote current progress' }
   $submission = @{attempt_id='standard-smoke-attempt-0001';answers=$answers} | ConvertTo-Json -Depth 6
   $result = Invoke-RestMethod ("http://127.0.0.1:19000/api/standard/exams/"+$published.id+"/submit") -Method Post -Body $submission -ContentType 'application/json' -WebSession $studentSession
   if ($result.score -ne 20) { throw 'Exam scoring failed' }
