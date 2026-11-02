@@ -106,7 +106,9 @@ document.addEventListener("DOMContentLoaded",()=>{
       let revision=Number.isSafeInteger(saved?.revision)?saved.revision:0;
       let saveTimer=null;
       let saveFailureKind=null;
-      saveStatus.textContent="Exam ready / الامتحان جاهز";
+      saveStatus.textContent=conflictBackup&&typeof conflictBackup.answers==="object"&&conflictBackup.answers
+        ?"Unsynced local backup available ("+Object.keys(conflictBackup.answers).length+" answers); it is not merged automatically / توجد نسخة محلية غير متزامنة ("+Object.keys(conflictBackup.answers).length+" إجابات) ولم تُدمج تلقائيًا"
+        :"Exam ready / الامتحان جاهز";
       const saveProgress=()=>{
         // Preserve the latest local answers until the server confirms this revision.
         saveFailureKind=null;
