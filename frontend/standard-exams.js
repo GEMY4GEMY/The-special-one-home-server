@@ -106,6 +106,9 @@ document.addEventListener("DOMContentLoaded",()=>{
         const info=document.createElement("p");
         info.textContent="Local backup: "+Object.keys(backupAnswers).length+" answers; current attempt: "+Object.keys(serverAnswers).length+" answers; differences: "+differing+" / النسخة المحلية: "+Object.keys(backupAnswers).length+"، المحاولة الحالية: "+Object.keys(serverAnswers).length+"، الاختلافات: "+differing+". No automatic merge / لا يوجد دمج تلقائي.";
         comparison.append(summary,info);
+        const guidance=document.createElement("p");
+        guidance.textContent="Review the differences below before continuing. Continuing uses server answers only; your local backup remains separate / راجع الاختلافات قبل الاستكمال. سيستخدم البرنامج إجابات السيرفر فقط، وتبقى النسخة المحلية منفصلة.";
+        comparison.append(guidance);
         const continueSaved=document.createElement("button");
         continueSaved.type="button";
         continueSaved.className="outline";
