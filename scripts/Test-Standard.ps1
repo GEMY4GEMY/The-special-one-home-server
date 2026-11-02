@@ -155,10 +155,8 @@ try {
   $backupPath = Join-Path $env:RUNNER_TEMP 'tso-standard-roundtrip.sqlite3'
   Invoke-WebRequest 'http://127.0.0.1:19000/api/admin/standard/backup' -WebSession $admin -OutFile $backupPath
   if ((Get-Item $backupPath).Length -lt 4096) { throw 'Database backup is unexpectedly small' }
-  $beforeRestore = @(Invoke-RestMethod 'http://127.0.0.1:19000/api/standard/my-attempts' -WebSession $studentSession)
   $restoreResult = Invoke-RestMethod 'http://127.0.0.1:19000/api/admin/standard/restore' -Method Post -WebSession $admin -Form @{file=Get-Item $backupPath}
   if (-not $restoreResult.restored -or -not $restoreResult.login_required) { throw 'Backup restore did not complete' }
-  $studentAfterRestore = New-Object Microsoft.PowerShell.Commands.WebRequestSession
   # Restore must invalidate previous sessions.
   $oldSessionRejected = $false
   try { Invoke-RestMethod 'http://127.0.0.1:19000/api/standard/my-attempts' -WebSession $studentSession | Out-Null } catch { if ([int]$_.Exception.Response.StatusCode -eq 401) { $oldSessionRejected=$true } }
