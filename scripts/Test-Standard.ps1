@@ -96,6 +96,15 @@ try {
   Invoke-RestMethod $progressUrl -Method Put -Body $otherStudentSave -ContentType 'application/json' -WebSession $publicSession | Out-Null
   $firstStudentProgress = Invoke-RestMethod $progressUrl -WebSession $studentSession
   if ($firstStudentProgress.attemptId -ne 'standard-smoke-attempt-0001' -or $firstStudentProgress.revision -ne 2) { throw 'Another student overwrote the first student progress' }
+  # Signing out and back in must recover the same student's server-side attempt.
+  Invoke-RestMethod 'http://127.0.0.1:19000/api/logout' -Method Post -WebSession $studentSession | Out-Null
+  $loggedOutProgressDenied = $false
+  try { Invoke-RestMethod $progressUrl -WebSession $studentSession | Out-Null } catch { if ([int]$_.Exception.Response.StatusCode -in @(401,403)) { $loggedOutProgressDenied = $true } }
+  if (-not $loggedOutProgressDenied) { throw 'Logged-out student could still access saved progress' }
+  $studentSession = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+  Invoke-RestMethod 'http://127.0.0.1:19000/api/login' -Method Post -Body $studentLogin -ContentType 'application/json' -WebSession $studentSession | Out-Null
+  $resumedProgress = Invoke-RestMethod $progressUrl -WebSession $studentSession
+  if ($resumedProgress.attemptId -ne 'standard-smoke-attempt-0001' -or $resumedProgress.revision -ne 2) { throw 'Student progress was not recovered after login' }
   $progressOld = @{attempt_id='standard-smoke-attempt-0001';answers=@{};page=0;revision=1} | ConvertTo-Json -Depth 6
   $staleRejected = $false
   try { Invoke-RestMethod $progressUrl -Method Put -Body $progressOld -ContentType 'application/json' -WebSession $studentSession | Out-Null } catch { if ([int]$_.Exception.Response.StatusCode -eq 409) { $staleRejected = $true } }
