@@ -145,7 +145,18 @@ def save_progress(exam_id: str, payload: ProgressPayload, user=Depends(current_u
             raise HTTPException(409, "Another exam session is already in progress; resume the saved attempt")
         if existing and payload.revision > 0 and payload.revision <= existing["revision"]:
             raise HTTPException(409, "An equal or newer progress revision is already saved")
-        conn.execute("INSERT INTO standard_progress(student_id,publication_id,attempt_id,answers,page,updated_at,revision) VALUES (?,?,?,?,?,?,?) ON CONFLICT(student_id,publication_id) DO UPDATE SET attempt_id=excluded.attempt_id,answers=excluded.answers,page=excluded.page,updated_at=excluded.updated_at,revision=excluded.revision", (user["id"],exam_id,payload.attempt_id,json.dumps(payload.answers),payload.page,datetime.now(timezone.utc).isoformat(),payload.revision))
+        result = conn.execute(
+            """INSERT INTO standard_progress(student_id,publication_id,attempt_id,answers,page,updated_at,revision)
+               VALUES (?,?,?,?,?,?,?)
+               ON CONFLICT(student_id,publication_id) DO UPDATE SET
+                 answers=excluded.answers,page=excluded.page,updated_at=excluded.updated_at,revision=excluded.revision
+               WHERE standard_progress.attempt_id=excluded.attempt_id
+                 AND (excluded.revision>standard_progress.revision
+                      OR (excluded.revision=0 AND standard_progress.revision=0))""",
+            (user["id"],exam_id,payload.attempt_id,json.dumps(payload.answers),payload.page,datetime.now(timezone.utc).isoformat(),payload.revision)
+        )
+        if result.rowcount != 1:
+            raise HTTPException(409, "Progress was superseded by a newer save or another attempt")
     return {"saved":True}
 
 
