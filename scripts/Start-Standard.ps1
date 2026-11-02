@@ -48,5 +48,17 @@ if ($lanAddresses.Count -eq 0) {
     }
 }
 Write-Host 'If a tablet cannot connect, allow port 200 on Windows Firewall for Private networks.'
+try {
+    $firewallRules = @(Get-NetFirewallRule -Enabled True -Direction Inbound -Action Allow -ErrorAction Stop |
+        Get-NetFirewallPortFilter -ErrorAction Stop |
+        Where-Object { $_.Protocol -eq 'TCP' -and $_.LocalPort -eq '200' })
+    if ($firewallRules.Count -eq 0) {
+        Write-Warning 'No enabled inbound TCP port 200 allow rule was detected. Tablets may be blocked by Windows Firewall.'
+    } else {
+        Write-Host 'An enabled inbound TCP port 200 firewall allow rule was detected.'
+    }
+} catch {
+    Write-Host 'Firewall status could not be checked; Windows may require administrator permission.'
+}
 Start-Process 'http://localhost:200/standard-home'
 & $python -m uvicorn backend.standard_app:app --host 0.0.0.0 --port 200 --workers 1
