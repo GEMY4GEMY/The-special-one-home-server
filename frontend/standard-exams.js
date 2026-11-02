@@ -11,6 +11,7 @@ document.addEventListener("DOMContentLoaded",()=>{
   if(!area.classList.contains('hidden'))queueMicrotask(()=>load.click());
   load.onclick=async()=>{
     content.replaceChildren();
+    panel.querySelector("#tso-conflict-comparison")?.remove();
     try{const exams=await request("/api/standard/exams");if(!exams.length){content.textContent="No current exam assigned / لا يوجد امتحان منشور حاليًا.";}
       const exam=exams[0];
       if(exam){
