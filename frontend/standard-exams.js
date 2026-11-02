@@ -115,6 +115,10 @@ document.addEventListener("DOMContentLoaded",()=>{
               if(sentRevision!==revision)return;
               const conflict=String(error?.message||"").includes("409");
               saveFailureKind=conflict?"conflict":"offline";
+              if(conflict){
+                // Preserve the unsynced work separately before the student reloads.
+                try{sessionStorage.setItem(storageKey+":conflict-backup",JSON.stringify({answers,page,attemptId,revision}))}catch(_){}
+              }
               saveStatus.textContent=conflict
                 ?"Save conflict: reopen this exam to load the current attempt / تعارض في الحفظ: افتح الامتحان مجددًا لاسترجاع المحاولة الحالية"
                 :"Saved in this browser session; waiting for connection / محفوظ في جلسة المتصفح وفي انتظار الاتصال";
@@ -127,23 +131,6 @@ document.addEventListener("DOMContentLoaded",()=>{
         // A 409 is a server-side attempt/revision conflict, not an offline save.
         // Do not retry it automatically: the student must reload the saved attempt.
         if(saveFailureKind==="offline") saveProgress();
-      };
-      const recoverConflict=async()=>{
-        if(saveFailureKind!=="conflict") return;
-        try{
-          const remote=await request("/api/standard/exams/"+encodeURIComponent(id)+"/progress");
-          if(!remote?.attemptId){
-            saveStatus.textContent="No saved server attempt found / لا توجد محاولة محفوظة على السيرفر";
-            return;
-          }
-          // Never silently overwrite the student's unsynced local answers.
-          const backupKey=storageKey+":conflict-backup";
-          try{sessionStorage.setItem(backupKey,JSON.stringify({answers,page,attemptId,revision}))}catch(_){}
-          saveStatus.textContent="Server attempt available. Local answers kept as a backup; reopen the exam to recover / توجد محاولة على السيرفر، وتم الاحتفاظ بنسخة محلية قبل إعادة فتح الامتحان";
-        }catch(error){
-          saveStatus.textContent="Cannot load server attempt yet / تعذر تحميل المحاولة من السيرفر حاليًا";
-          console.warn("Conflict recovery failed",error);
-        }
       };
       window.addEventListener("online",retryOnReconnect);
       // A tablet may reconnect to the local server without firing the browser online event.
