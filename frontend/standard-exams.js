@@ -74,24 +74,26 @@ document.addEventListener("DOMContentLoaded",()=>{
       const pageSize=6;
       let page=Number.isInteger(saved?.page)?Math.max(0,saved.page):0;
       const attemptId=saved?.attemptId||(crypto.randomUUID?crypto.randomUUID():String(Date.now())+"-attempt");
+      let revision=Number.isSafeInteger(saved?.revision)?saved.revision:0;
       let saveTimer=null;
       const saveProgress=()=>{
-        try{sessionStorage.setItem(storageKey,JSON.stringify({answers,page,attemptId}))}catch(_){}
+        revision+=1;
+        try{sessionStorage.setItem(storageKey,JSON.stringify({answers,page,attemptId,revision}))}catch(_){}
         clearTimeout(saveTimer);
         saveTimer=setTimeout(()=>{
-          request("/api/standard/exams/"+encodeURIComponent(id)+"/progress",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({attempt_id:attemptId,answers,page})}).catch(error=>console.warn("Progress will retry on next change",error));
+          request("/api/standard/exams/"+encodeURIComponent(id)+"/progress",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({attempt_id:attemptId,answers,page,revision})}).catch(error=>console.warn("Progress will retry on next change",error));
         },700);
       };
       // Retry the current answers when Wi-Fi returns after an interrupted save.
       const retryOnReconnect=()=>saveProgress();
       window.addEventListener("online",retryOnReconnect);
       const flushOnPageHide=()=>{
-        try{sessionStorage.setItem(storageKey,JSON.stringify({answers,page,attemptId}))}catch(_){}
+        try{sessionStorage.setItem(storageKey,JSON.stringify({answers,page,attemptId,revision}))}catch(_){}
         clearTimeout(saveTimer);
         fetch("/api/standard/exams/"+encodeURIComponent(id)+"/progress",{
           method:"PUT",credentials:"same-origin",keepalive:true,
           headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({attempt_id:attemptId,answers,page})
+          body:JSON.stringify({attempt_id:attemptId,answers,page,revision})
         }).catch(()=>{});
       };
       window.addEventListener("pagehide",flushOnPageHide);
