@@ -19,6 +19,9 @@ def init(conn):
         conn.execute("ALTER TABLE standard_publications ADD COLUMN question_snapshot TEXT")
     conn.execute("CREATE TABLE IF NOT EXISTS standard_visibility (publication_id TEXT PRIMARY KEY, active INTEGER NOT NULL DEFAULT 0)")
     conn.execute("CREATE TABLE IF NOT EXISTS standard_progress (student_id INTEGER NOT NULL, publication_id TEXT NOT NULL, attempt_id TEXT NOT NULL, answers TEXT NOT NULL, page INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL, PRIMARY KEY(student_id,publication_id))")
+    progress_columns = {row[1] for row in conn.execute("PRAGMA table_info(standard_progress)")}
+    if "revision" not in progress_columns:
+        conn.execute("ALTER TABLE standard_progress ADD COLUMN revision INTEGER NOT NULL DEFAULT 0")
     conn.execute("CREATE TABLE IF NOT EXISTS standard_attempts (id INTEGER PRIMARY KEY, student_id INTEGER NOT NULL, publication_id TEXT NOT NULL, attempt_id TEXT NOT NULL, score INTEGER NOT NULL, maximum INTEGER NOT NULL, submitted_at TEXT NOT NULL, UNIQUE(student_id,attempt_id))")
 
 def snapshot_questions(conn, ids):
@@ -111,6 +114,7 @@ class ProgressPayload(BaseModel):
     attempt_id: str
     answers: dict[str, str]
     page: int = 0
+    revision: int = 0
 
 
 @app.get("/api/standard/exams/{exam_id}/progress")
@@ -119,8 +123,8 @@ def get_progress(exam_id: str, user=Depends(current_user)):
     with db() as conn:
         init(conn)
         load_exam(conn, exam_id, user)
-        row = conn.execute("SELECT attempt_id,answers,page FROM standard_progress WHERE student_id=? AND publication_id=?", (user["id"],exam_id)).fetchone()
-        return {"attemptId":row["attempt_id"],"answers":json.loads(row["answers"]),"page":row["page"]} if row else None
+        row = conn.execute("SELECT attempt_id,answers,page,revision FROM standard_progress WHERE student_id=? AND publication_id=?", (user["id"],exam_id)).fetchone()
+        return {"attemptId":row["attempt_id"],"answers":json.loads(row["answers"]),"page":row["page"],"revision":row["revision"]} if row else None
 
 
 @app.put("/api/standard/exams/{exam_id}/progress")
@@ -136,7 +140,10 @@ def save_progress(exam_id: str, payload: ProgressPayload, user=Depends(current_u
             raise HTTPException(422, "Invalid answers")
         if conn.execute("SELECT 1 FROM standard_attempts WHERE student_id=? AND publication_id=? AND attempt_id=?", (user["id"],exam_id,payload.attempt_id)).fetchone():
             raise HTTPException(409, "This attempt has already been submitted")
-        conn.execute("INSERT INTO standard_progress(student_id,publication_id,attempt_id,answers,page,updated_at) VALUES (?,?,?,?,?,?) ON CONFLICT(student_id,publication_id) DO UPDATE SET attempt_id=excluded.attempt_id,answers=excluded.answers,page=excluded.page,updated_at=excluded.updated_at", (user["id"],exam_id,payload.attempt_id,json.dumps(payload.answers),payload.page,datetime.now(timezone.utc).isoformat()))
+        existing = conn.execute("SELECT attempt_id,revision FROM standard_progress WHERE student_id=? AND publication_id=?", (user["id"],exam_id)).fetchone()
+        if existing and existing["attempt_id"] == payload.attempt_id and payload.revision > 0 and payload.revision <= existing["revision"]:
+            raise HTTPException(409, "An equal or newer progress revision is already saved")
+        conn.execute("INSERT INTO standard_progress(student_id,publication_id,attempt_id,answers,page,updated_at,revision) VALUES (?,?,?,?,?,?,?) ON CONFLICT(student_id,publication_id) DO UPDATE SET attempt_id=excluded.attempt_id,answers=excluded.answers,page=excluded.page,updated_at=excluded.updated_at,revision=excluded.revision", (user["id"],exam_id,payload.attempt_id,json.dumps(payload.answers),payload.page,datetime.now(timezone.utc).isoformat(),payload.revision))
     return {"saved":True}
 
 
