@@ -106,6 +106,28 @@ document.addEventListener("DOMContentLoaded",()=>{
         const info=document.createElement("p");
         info.textContent="Local backup: "+Object.keys(backupAnswers).length+" answers; current attempt: "+Object.keys(serverAnswers).length+" answers; differences: "+differing+" / النسخة المحلية: "+Object.keys(backupAnswers).length+"، المحاولة الحالية: "+Object.keys(serverAnswers).length+"، الاختلافات: "+differing+". No automatic merge / لا يوجد دمج تلقائي.";
         comparison.append(summary,info);
+        const continueSaved=document.createElement("button");
+        continueSaved.type="button";
+        continueSaved.className="outline";
+        continueSaved.textContent="Continue server attempt / استكمال المحاولة المحفوظة على السيرفر";
+        continueSaved.onclick=async()=>{
+          try{
+            const current=await request("/api/standard/exams/"+encodeURIComponent(id)+"/progress");
+            if(!current?.attemptId){
+              saveStatus.textContent="No server attempt to resume / لا توجد محاولة محفوظة على السيرفر";
+              return;
+            }
+            // Retain the conflict backup; discard only the ordinary local cache
+            // so the next start reads the authoritative server attempt.
+            sessionStorage.removeItem(storageKey);
+            if(stopPreviousProgressListeners){
+              stopPreviousProgressListeners();
+              stopPreviousProgressListeners=null;
+            }
+            await start(id);
+          }catch(error){saveStatus.textContent="Cannot resume server attempt / تعذر استكمال محاولة السيرفر: "+error.message}
+        };
+        comparison.append(continueSaved);
         if(differing){
           const differences=document.createElement("ol");
           for(const qid of allIds){
