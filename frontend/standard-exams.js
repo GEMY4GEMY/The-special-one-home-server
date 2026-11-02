@@ -103,7 +103,10 @@ document.addEventListener("DOMContentLoaded",()=>{
         clearTimeout(saveTimer);
         saveTimer=setTimeout(()=>{
           const sentRevision=revision;
-          request("/api/standard/exams/"+encodeURIComponent(id)+"/progress",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({attempt_id:attemptId,answers,page,revision:sentRevision})})
+          // Snapshot the answers at send time: later edits must not mutate this request.
+          const sentAnswers=JSON.parse(JSON.stringify(answers));
+          const sentPage=page;
+          request("/api/standard/exams/"+encodeURIComponent(id)+"/progress",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({attempt_id:attemptId,answers:sentAnswers,page:sentPage,revision:sentRevision})})
             .then(()=>{if(sentRevision===revision)saveStatus.textContent="Saved on server / تم الحفظ على السيرفر";})
              .catch(error=>{
               if(sentRevision!==revision)return;
