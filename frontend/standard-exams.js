@@ -127,6 +127,11 @@ document.addEventListener("DOMContentLoaded",()=>{
         if(document.visibilityState==="visible" && saveStatus.textContent.includes("في انتظار الاتصال")) saveProgress();
       };
       document.addEventListener("visibilitychange",retryOnReturn);
+      // Browsers do not always emit "online" when the local PC server returns.
+      // Retry at a modest interval only while the current save is unsynced.
+      const retryInterval=setInterval(()=>{
+        if(document.visibilityState==="visible" && saveStatus.textContent.includes("في انتظار الاتصال") && navigator.onLine) saveProgress();
+      },15000);
       const flushOnPageHide=()=>{
         // A final flush must be newer than any previously queued or completed save.
         revision+=1;
@@ -142,6 +147,7 @@ document.addEventListener("DOMContentLoaded",()=>{
       stopPreviousProgressListeners=()=>{
         window.removeEventListener("online",retryOnReconnect);
         document.removeEventListener("visibilitychange",retryOnReturn);
+        clearInterval(retryInterval);
         window.removeEventListener("pagehide",flushOnPageHide);
         clearTimeout(saveTimer);
       };
