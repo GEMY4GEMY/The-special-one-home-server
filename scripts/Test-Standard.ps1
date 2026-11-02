@@ -137,6 +137,15 @@ try {
   $otherSessionRejected = $false
   try { Invoke-RestMethod $progressUrl -Method Put -Body $otherSession -ContentType 'application/json' -WebSession $studentSession | Out-Null } catch { if ([int]$_.Exception.Response.StatusCode -eq 409) { $otherSessionRejected = $true } }
   if (-not $otherSessionRejected) { throw 'Competing exam attempt replaced saved progress' }
+  # A rejected competing attempt must never alter the original student's answers.
+  $afterConflict = Invoke-RestMethod $progressUrl -WebSession $studentSession
+  if ($afterConflict.attemptId -ne 'standard-smoke-attempt-0001' -or $afterConflict.revision -ne 6 -or $afterConflict.page -ne 3) {
+    throw 'Rejected competing attempt modified saved exam progress'
+  }
+  # Repeating the conflicting request must still fail without changing the saved attempt.
+  $repeatConflictRejected = $false
+  try { Invoke-RestMethod $progressUrl -Method Put -Body $otherSession -ContentType 'application/json' -WebSession $studentSession | Out-Null } catch { if ([int]$_.Exception.Response.StatusCode -eq 409) { $repeatConflictRejected = $true } }
+  if (-not $repeatConflictRejected) { throw 'Repeated competing attempt was unexpectedly accepted' }
   $savedProgress = Invoke-RestMethod $progressUrl -WebSession $studentSession
   if ($savedProgress.revision -ne 6 -or $savedProgress.page -ne 3) { throw 'Stale save overwrote current progress' }
   $submission = @{attempt_id='standard-smoke-attempt-0001';answers=$answers} | ConvertTo-Json -Depth 6
