@@ -115,12 +115,30 @@ try {
   $delayedRejected = $false
   try { Invoke-RestMethod $progressUrl -Method Put -Body $progressDelayed -ContentType 'application/json' -WebSession $studentSession | Out-Null } catch { if ([int]$_.Exception.Response.StatusCode -eq 409) { $delayedRejected = $true } }
   if (-not $delayedRejected) { throw 'Delayed older Wi-Fi save overwrote latest answers' }
+  # Fire two revisions concurrently through the HTTP endpoint, then verify that
+  # the database retains the newer revision regardless of arrival order.
+  $cookieHeader = $studentSession.Cookies.GetCookieHeader($progressUrl)
+  $concurrentResults = @(
+    @{attempt_id='standard-smoke-attempt-0001';answers=@{};page=0;revision=5},
+    @{attempt_id='standard-smoke-attempt-0001';answers=$answers;page=3;revision=6}
+  ) | ForEach-Object -Parallel {
+    $body = $_ | ConvertTo-Json -Depth 6 -Compress
+    try {
+      Invoke-RestMethod $using:progressUrl -Method Put -Body $body -ContentType 'application/json' -Headers @{Cookie=$using:cookieHeader} | Out-Null
+      200
+    } catch {
+      [int]$_.Exception.Response.StatusCode
+    }
+  } -ThrottleLimit 2
+  if (@($concurrentResults | Where-Object {$_ -notin @(200,409)}).Count -gt 0) { throw 'Unexpected response during concurrent progress writes' }
+  $concurrentSaved = Invoke-RestMethod $progressUrl -WebSession $studentSession
+  if ($concurrentSaved.revision -ne 6 -or $concurrentSaved.page -ne 3) { throw 'Concurrent older save replaced newer progress' }
   $otherSession = @{attempt_id='standard-smoke-attempt-0002';answers=@{};page=0;revision=3} | ConvertTo-Json -Depth 6
   $otherSessionRejected = $false
   try { Invoke-RestMethod $progressUrl -Method Put -Body $otherSession -ContentType 'application/json' -WebSession $studentSession | Out-Null } catch { if ([int]$_.Exception.Response.StatusCode -eq 409) { $otherSessionRejected = $true } }
   if (-not $otherSessionRejected) { throw 'Competing exam attempt replaced saved progress' }
   $savedProgress = Invoke-RestMethod $progressUrl -WebSession $studentSession
-  if ($savedProgress.revision -ne 4 -or $savedProgress.page -ne 2) { throw 'Stale save overwrote current progress' }
+  if ($savedProgress.revision -ne 6 -or $savedProgress.page -ne 3) { throw 'Stale save overwrote current progress' }
   $submission = @{attempt_id='standard-smoke-attempt-0001';answers=$answers} | ConvertTo-Json -Depth 6
   $result = Invoke-RestMethod ("http://127.0.0.1:19000/api/standard/exams/"+$published.id+"/submit") -Method Post -Body $submission -ContentType 'application/json' -WebSession $studentSession
   if ($result.score -ne 20) { throw 'Exam scoring failed' }
