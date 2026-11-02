@@ -68,7 +68,12 @@ document.addEventListener("DOMContentLoaded",()=>{
       try{saved=JSON.parse(sessionStorage.getItem(storageKey)||"null")}catch(_){}
       try{
         const remote=await request("/api/standard/exams/"+encodeURIComponent(id)+"/progress");
-        if(remote&&remote.attemptId&&(!saved||Object.keys(remote.answers||{}).length>Object.keys(saved.answers||{}).length))saved=remote;
+        if(remote&&remote.attemptId){
+          const localRevision=Number.isSafeInteger(saved?.revision)?saved.revision:0;
+          const remoteRevision=Number.isSafeInteger(remote.revision)?remote.revision:0;
+          // Server owns the active attempt. Prefer newer local edits only for that same attempt.
+          if(!saved||saved.attemptId!==remote.attemptId||remoteRevision>=localRevision) saved=remote;
+        }
       }catch(error){console.warn("Server progress unavailable; using local recovery",error)}
       const answers=saved&&typeof saved.answers==="object"&&saved.answers? saved.answers:{};
       const pageSize=6;
