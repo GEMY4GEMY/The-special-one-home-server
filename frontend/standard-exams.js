@@ -121,6 +121,12 @@ document.addEventListener("DOMContentLoaded",()=>{
       // Retry the current answers when Wi-Fi returns after an interrupted save.
       const retryOnReconnect=()=>saveProgress();
       window.addEventListener("online",retryOnReconnect);
+      // A tablet may reconnect to the local server without firing the browser online event.
+      // Retry only an unsynced save when the student returns to the exam tab.
+      const retryOnReturn=()=>{
+        if(document.visibilityState==="visible" && saveStatus.textContent.includes("في انتظار الاتصال")) saveProgress();
+      };
+      document.addEventListener("visibilitychange",retryOnReturn);
       const flushOnPageHide=()=>{
         // A final flush must be newer than any previously queued or completed save.
         revision+=1;
@@ -135,6 +141,7 @@ document.addEventListener("DOMContentLoaded",()=>{
       window.addEventListener("pagehide",flushOnPageHide);
       stopPreviousProgressListeners=()=>{
         window.removeEventListener("online",retryOnReconnect);
+        document.removeEventListener("visibilitychange",retryOnReturn);
         window.removeEventListener("pagehide",flushOnPageHide);
         clearTimeout(saveTimer);
       };
