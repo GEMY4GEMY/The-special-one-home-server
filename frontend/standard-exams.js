@@ -116,10 +116,7 @@ document.addEventListener("DOMContentLoaded",()=>{
         },700);
       };
       // Retry the current answers when Wi-Fi returns after an interrupted save.
-      const retryOnReconnect=()=>{
-        saveStatus.textContent="Connection restored; syncing answers / عاد الاتصال وجاري مزامنة الإجابات";
-        saveProgress();
-      };
+      const retryOnReconnect=()=>saveProgress();
       window.addEventListener("online",retryOnReconnect);
       const flushOnPageHide=()=>{
         // A final flush must be newer than any previously queued or completed save.
