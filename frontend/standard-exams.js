@@ -97,7 +97,7 @@ document.addEventListener("DOMContentLoaded",()=>{
         const notice=document.createElement("p");
         notice.className="muted";
         notice.textContent="Unsynced local backup available ("+Object.keys(conflictBackup.answers).length+" answers). Server answers remain separate / توجد نسخة محلية غير متزامنة ("+Object.keys(conflictBackup.answers).length+" إجابات)، ولن تُدمج تلقائيًا مع السيرفر.";
-        content.append(notice);
+        saveStatus.textContent=notice.textContent;
       }
       const answers=saved&&typeof saved.answers==="object"&&saved.answers? saved.answers:{};
       const pageSize=6;
