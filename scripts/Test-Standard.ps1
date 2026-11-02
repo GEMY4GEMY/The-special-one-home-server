@@ -109,12 +109,18 @@ try {
   $staleRejected = $false
   try { Invoke-RestMethod $progressUrl -Method Put -Body $progressOld -ContentType 'application/json' -WebSession $studentSession | Out-Null } catch { if ([int]$_.Exception.Response.StatusCode -eq 409) { $staleRejected = $true } }
   if (-not $staleRejected) { throw 'Outdated progress revision was not rejected' }
+  $progressLatest = @{attempt_id='standard-smoke-attempt-0001';answers=$answers;page=2;revision=4} | ConvertTo-Json -Depth 6
+  Invoke-RestMethod $progressUrl -Method Put -Body $progressLatest -ContentType 'application/json' -WebSession $studentSession | Out-Null
+  $progressDelayed = @{attempt_id='standard-smoke-attempt-0001';answers=@{};page=0;revision=3} | ConvertTo-Json -Depth 6
+  $delayedRejected = $false
+  try { Invoke-RestMethod $progressUrl -Method Put -Body $progressDelayed -ContentType 'application/json' -WebSession $studentSession | Out-Null } catch { if ([int]$_.Exception.Response.StatusCode -eq 409) { $delayedRejected = $true } }
+  if (-not $delayedRejected) { throw 'Delayed older Wi-Fi save overwrote latest answers' }
   $otherSession = @{attempt_id='standard-smoke-attempt-0002';answers=@{};page=0;revision=3} | ConvertTo-Json -Depth 6
   $otherSessionRejected = $false
   try { Invoke-RestMethod $progressUrl -Method Put -Body $otherSession -ContentType 'application/json' -WebSession $studentSession | Out-Null } catch { if ([int]$_.Exception.Response.StatusCode -eq 409) { $otherSessionRejected = $true } }
   if (-not $otherSessionRejected) { throw 'Competing exam attempt replaced saved progress' }
   $savedProgress = Invoke-RestMethod $progressUrl -WebSession $studentSession
-  if ($savedProgress.revision -ne 2 -or $savedProgress.page -ne 1) { throw 'Stale save overwrote current progress' }
+  if ($savedProgress.revision -ne 4 -or $savedProgress.page -ne 2) { throw 'Stale save overwrote current progress' }
   $submission = @{attempt_id='standard-smoke-attempt-0001';answers=$answers} | ConvertTo-Json -Depth 6
   $result = Invoke-RestMethod ("http://127.0.0.1:19000/api/standard/exams/"+$published.id+"/submit") -Method Post -Body $submission -ContentType 'application/json' -WebSession $studentSession
   if ($result.score -ne 20) { throw 'Exam scoring failed' }
