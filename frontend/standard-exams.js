@@ -54,7 +54,12 @@ document.addEventListener("DOMContentLoaded",()=>{
   };
   document.addEventListener('tso:student-login',loadPracticeFilters);
   if(!document.getElementById('student-area').classList.contains('hidden'))loadPracticeFilters();
+  let stopPreviousProgressListeners=null;
   async function start(id){
+    if(stopPreviousProgressListeners){
+      stopPreviousProgressListeners();
+      stopPreviousProgressListeners=null;
+    }
     content.replaceChildren();
     try{
       const exam=await request("/api/standard/exams/"+encodeURIComponent(id));
@@ -80,7 +85,7 @@ document.addEventListener("DOMContentLoaded",()=>{
       // Retry the current answers when Wi-Fi returns after an interrupted save.
       const retryOnReconnect=()=>saveProgress();
       window.addEventListener("online",retryOnReconnect);
-      window.addEventListener("pagehide",()=>{
+      const flushOnPageHide=()=>{
         try{sessionStorage.setItem(storageKey,JSON.stringify({answers,page,attemptId}))}catch(_){}
         clearTimeout(saveTimer);
         fetch("/api/standard/exams/"+encodeURIComponent(id)+"/progress",{
@@ -88,7 +93,13 @@ document.addEventListener("DOMContentLoaded",()=>{
           headers:{"Content-Type":"application/json"},
           body:JSON.stringify({attempt_id:attemptId,answers,page})
         }).catch(()=>{});
-      },{once:true});
+      };
+      window.addEventListener("pagehide",flushOnPageHide);
+      stopPreviousProgressListeners=()=>{
+        window.removeEventListener("online",retryOnReconnect);
+        window.removeEventListener("pagehide",flushOnPageHide);
+        clearTimeout(saveTimer);
+      };
       const totalPages=Math.ceil(exam.questions.length/pageSize);
       if(saved){const resumed=document.createElement("p");resumed.className="muted";resumed.textContent="Your saved answers were restored / تم استرجاع إجاباتك المحفوظة";content.append(resumed)}
       page=Math.min(page,Math.max(0,totalPages-1));
