@@ -119,6 +119,8 @@ document.addEventListener("DOMContentLoaded",()=>{
       const retryOnReconnect=()=>saveProgress();
       window.addEventListener("online",retryOnReconnect);
       const flushOnPageHide=()=>{
+        // A final flush must be newer than any previously queued or completed save.
+        revision+=1;
         try{sessionStorage.setItem(storageKey,JSON.stringify({answers,page,attemptId,revision}))}catch(_){}
         clearTimeout(saveTimer);
         fetch("/api/standard/exams/"+encodeURIComponent(id)+"/progress",{
