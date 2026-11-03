@@ -116,7 +116,8 @@ document.addEventListener("DOMContentLoaded",()=>{
           const url=URL.createObjectURL(blob);
           const link=document.createElement("a");
           link.href=url;
-          link.download="tso-exam-backup-"+String(id).replace(/[^a-zA-Z0-9_-]/g,"_")+".json";
+          const timestamp=new Date().toISOString().replace(/[:.]/g,"-");
+          link.download="tso-exam-backup-"+String(id).replace(/[^a-zA-Z0-9_-]/g,"_")+"-r"+(Number.isSafeInteger(conflictBackup.revision)?conflictBackup.revision:0)+"-"+timestamp+".json";
           link.click();
           URL.revokeObjectURL(url);
         };
